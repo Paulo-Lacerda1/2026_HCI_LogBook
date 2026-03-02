@@ -6,9 +6,9 @@ Work carried out by:
 -->
 # *HCI Project Logbook*
 
-**Title of the project**: [Title goes here]
+**Title of the project**: SwipeTravel
 **Team:**
-- Student 1: [Name and Number] 
+- Student 1: João Vieira, 118643
 - Student 2; [Name and Number]
 - Student 3: [Name and Number]
 

@@ -1,54 +1,41 @@
 # Informal User Interview Notes 
 
-> 	The questions included in this file are just possibilities. The questions you do should be adapted to your case, where needed.
 
 ## Interview Details 
-- **Date:** [YYYY-MM-DD] 
-- **Interviewer:** [Your Name] 
-- **Participant:** [Optional: Anonymous or Role] 
-- **Context:** [Where and how the interview was conducted] 
+- **Date:** 2026/03/02 
+- **Interviewer:** Martim Gomes 
+- **Participant:** Jorge Marques, Estudante 
+- **Context:** Entrevista em Sala de Aula, juntamente com a equipa responsável do projeto.
 
 --- 
 ## Task Overview 
 
- **What task is the user trying to accomplish?** 
-[Describe the task in the user’s words] 
+ **Costumas organizar viagens de grupo com amigos? O que é que tentam planear em conjunto?** 
+- Selecionar um destino e ir de ferias. O mais difícil e escolher o destino, tendo em conta as atrações disponíveis no mesmo, e o graveto que e preciso.
 
-**What are the main pain points or difficulties they experience?** 
-- [Challenge 1] 
-- [Challenge 2] 
-- [Challenge 3] 
+**Qual é a parte mais stressante, chata ou confusa de planear o roteiro com várias pessoas?**
+- Escolher para onde ir, um sitio que agrade a todos.
 
-**Are there any workarounds or strategies they currently use?** 
-- [List of workarounds] 
+**Quando há opiniões diferentes sobre o que visitar, como é que resolvem o problema para chegar a um consenso?** 
+- Cada um diz o que gosta (prós e contras), ate que cheguem todos a um consenso.
 
 ---- 
 ## Tools & Environment 
-**What tools or methods does the user currently rely on?** 
-- [Tool 1] 
-- [Tool 2] 
-- [Any manual processes] 
+**Que aplicações ou métodos usam hoje em dia para organizar a informação toda?** 
+- Booking.com, para detalhes das viagens; 
+- WhatsApp, para conversar com a malta; 
 
-**Are there any frustrations or limitations with these tools?** 
-- [Limitation 1] 
-- [Limitation 2] 
+**O que é que te irrita mais nessas ferramentas que usam? (Por exemplo, no WhatsApp)** 
+- Dar a ideia e ficar perdida na conversa.
 
-**What features do they wish these tools had?** 
-- [Feature 1] 
-- [Feature 2] 
+**Se pudesses acrescentar uma funcionalidade mágica ao WhatsApp ou ao Excel para vos ajudar nas viagens, o que seria?** 
+- Criar uma extensão do WhatsApp – WhatsApp Viagens;
 --- 
 ## Expectations for a Novel Approach 
 
-**What would an ideal solution look like for them?** 
-- [Key expectations] 
-
-**What concerns or hesitations do they have about new approaches?** 
-- [Concern 1] 
-- [Concern 2] 
-
-**How do they measure success for completing the task efficiently?** 
-- [Efficiency metric or criteria] 
+**Se houvesse uma app onde podiam ver os locais e fazer 'swipe' estilo Tinder para votar no que gostam, e a app gerasse o roteiro automaticamente, usarias? Porquê?"** 
+- Sim, porque seria mais fácil de selecionar o destino, não sendo preciso pesquisar muito.
 
 --- 
 ## Additional Observations 
-[Free space for any other relevant notes, behaviors, or comments]
+Sem observações.
