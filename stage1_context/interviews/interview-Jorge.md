@@ -11,7 +11,7 @@
 ## Task Overview 
 
  **Costumas organizar viagens de grupo com amigos? O que é que tentam planear em conjunto?** 
-- Selecionar um destino e ir de ferias. O mais difícil e escolher o destino, tendo em conta as atrações disponíveis no mesmo, e o graveto que e preciso.
+- Selecionar um destino e ir de ferias. O mais difícil e escolher o destino, tendo em conta as atrações disponíveis no mesmo, e os gastos que vão ser necessários.
 
 **Qual é a parte mais stressante, chata ou confusa de planear o roteiro com várias pessoas?**
 - Escolher para onde ir, um sitio que agrade a todos.
