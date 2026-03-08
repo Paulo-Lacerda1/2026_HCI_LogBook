@@ -13,7 +13,7 @@
 ### Summary 
 | Attribute        | Details                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------           |
-| **Photo**        | ![Persona Name\|100](personas/persona1.jpeg)                                                                                           |
+| **Photo**        | ![Persona Name](personas/persona1.jpeg)                                                                                           |
 | **Name**         | Carolina Pereira                                                                                                                       |
 | **Age**          | 23                                                                                                                                     |
 | **Occupation**   | Estudante de Mestrado de Engenharia Química                                                                                            |
