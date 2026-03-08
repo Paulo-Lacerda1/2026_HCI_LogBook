@@ -9,11 +9,11 @@
 
 # Personas
 
-## Persona: [Persona Name] 
+## Persona: Carolina Pereira 
 ### Summary 
 | Attribute        | Details                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------           |
-| **Photo**        | ![Persona Name](personas/persona1.jpeg)                                                                                           |
+| **Photo**        | <div align="center">![Carolina Pereira](personas/persona1.jpeg)</div>                                                                  |
 | **Name**         | Carolina Pereira                                                                                                                       |
 | **Age**          | 23                                                                                                                                     |
 | **Occupation**   | Estudante de Mestrado de Engenharia Química                                                                                            |
@@ -24,14 +24,14 @@
 | **Full Profile** | [📄 Read More](personas/persona1_template.md)                                                                                          |
 
 ---
-## Persona: [Persona Name] 
+## Persona: João Silva
 ### Summary 
 | Attribute        | Details                                                                                                                                |
 | ---------------- | ---------------------------------------------                                                                                          |
-| **Photo**        | ![Persona Name](personas/persona2.jpeg)                                                                                                |
+| **Photo**        | <div align="center">![João Silva](personas/persona2.jpeg)</div>                                                                        |
 | **Name**         | João Silva                                                                                                                             |
 | **Age**          | 20                                                                                                                                     |
-| **Occupation**   | Esyudante de Multimédia                                                                                                                |
+| **Occupation**   | Estudante de Multimédia                                                                                                                |
 | **Location**     | Porto, Portugal                                                                                                                        |
 | **Goals**        | Votar no roteiro de forma visual e rápida, Evitar o stress e a confusão do planeamento, Saber exatamente quanto tem de pagar no final. |
 | **Pain Points**  | Sobrecarga de Informação, Falta de Representação, Plataformas Complexas                                                                |
