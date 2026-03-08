@@ -11,32 +11,32 @@
 
 ## Persona: [Persona Name] 
 ### Summary 
-| Attribute        | Details                                       |
-| ---------------- | --------------------------------------------- |
-| **Photo**        | ![Persona Name\|100](personas/persona1.jpeg)  |
-| **Name**         | [Persona Name]                                |
-| **Age**          | [Persona Age]                                 |
-| **Occupation**   | [Job Title or Role]                           |
-| **Location**     | [City, Country]                               |
-| **Goals**        | [Brief summary of their main goals]           |
-| **Pain Points**  | [Key frustrations or challenges]              |
-| **Motivation**   | [One-line motivation or quote]                |
-| **Full Profile** | [📄 Read More](personas/persona1_template.md) |
+| Attribute        | Details                                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------           |
+| **Photo**        | ![Persona Name\|100](personas/persona1.jpeg)                                                                                           |
+| **Name**         | Carolina Pereira                                                                                                                       |
+| **Age**          | 23                                                                                                                                     |
+| **Occupation**   | Estudante de Mestrado de Engenharia Química                                                                                            |
+| **Location**     | Coimbra, Portugal                                                                                                                      |
+| **Goals**        | Obter decisões rápidas do grupo, Centralizar o roteiro num só sítio, Dividir despesas automaticamente.                                 |
+| **Pain Points**  | Apatia do grupo, Informação dispersa, Carga financeira e mental                                                                        |
+| **Motivation**   | *"Adoro viajar e criar memórias convosco, mas organizar tudo no WhatsApp tira-me a vontade toda. Para a próxima vão vocês!"*           |
+| **Full Profile** | [📄 Read More](personas/persona1_template.md)                                                                                          |
 
 ---
 ## Persona: [Persona Name] 
 ### Summary 
-| Attribute        | Details                                       |
-| ---------------- | --------------------------------------------- |
-| **Photo**        | ![Persona Name](path/to/photo.jpg)            |
-| **Name**         | [Persona Name]                                |
-| **Age**          | [Persona Age]                                 |
-| **Occupation**   | [Job Title or Role]                           |
-| **Location**     | [City, Country]                               |
-| **Goals**        | [Brief summary of their main goals]           |
-| **Pain Points**  | [Key frustrations or challenges]              |
-| **Motivation**   | [One-line motivation or quote]                |
-| **Full Profile** | [📄 Read More](personas/persona2_template.md) |
+| Attribute        | Details                                                                                                                                |
+| ---------------- | ---------------------------------------------                                                                                          |
+| **Photo**        | ![Persona Name](personas/persona2.jpeg)                                                                                                |
+| **Name**         | João Silva                                                                                                                             |
+| **Age**          | 20                                                                                                                                     |
+| **Occupation**   | Esyudante de Multimédia                                                                                                                |
+| **Location**     | Porto, Portugal                                                                                                                        |
+| **Goals**        | Votar no roteiro de forma visual e rápida, Evitar o stress e a confusão do planeamento, Saber exatamente quanto tem de pagar no final. |
+| **Pain Points**  | Sobrecarga de Informação, Falta de Representação, Plataformas Complexas                                                                |
+| **Motivation**   | *"Digam-me só quanto é e a que horas tenho de estar no aeroporto, que eu lá aparecerei!"*                                              |
+| **Full Profile** | [📄 Read More](personas/persona2_template.md)                                                                                          |
 
 ---
 

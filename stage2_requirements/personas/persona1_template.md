@@ -1,11 +1,11 @@
-# ![Persona Name](personas/persona1.jpeg)  
+# ![Persona Name](personas/persona1.jpeg) 
 **Name:** Carolina Pereira 
 **Age:** 23 
 **Occupation:** Estudante de Mestrado de Engenharia Química 
 **Location:** Coimbra, Portugal
 
 ## Background  
-A Carolina é aquela amigo do grupo que, desde o tempo do secundário, toma sempre a iniciativa de marcar os jantares, as viagens de verão e as escapadinhas de fim de semana. É uma rapariga metódica e organizada. Atualmente a tirar o mestrado, tem de gerir muito bem o seu tempo livre. Embora goste muito de explorar a Europa com os amigos, sente que o papel de "agente de viagens não remunerado" lhe cai sempre em cima porque o resto do grupo é demasiado acomodado para tomar decisões.
+A Carolina é aquela amiga do grupo que, desde o tempo do secundário, toma sempre a iniciativa de marcar os jantares, as viagens de verão e as escapadinhas de fim de semana. É uma rapariga metódica e organizada. Atualmente a tirar o mestrado, tem de gerir muito bem o seu tempo livre. Embora goste muito de explorar a Europa com os amigos, sente que o papel de "agente de viagens não remunerado" lhe cai sempre em cima porque o resto do grupo é demasiado acomodado para tomar decisões.
 
 ## Daily Life  
 O dia da Carolina resume-se a passar tempo entre ter aulas, projetos de grupo e tempo no laboratório. Ele gere cada minuto do seu dia no Google Calendar e usa o Notion para organizar a vida. Ao final do dia, quando tenta relaxar e planear a próxima viagem no grupo de WhatsApp dos amigos, depara-se com um ecrã cheio de memes, mensagens irrelevantes e links ignorados. Acaba por passar horas a criar folhas de Excel para comparar preços e tentar organizar a confusão que vai ao longo da conversa.
