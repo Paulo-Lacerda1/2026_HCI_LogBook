@@ -4,7 +4,7 @@
 
 ## Interview Details 
 - **Date:** 2026-03-09
-- **Interviewer:** Martum Gomes 
+- **Interviewer:** Martim Gomes 
 - **Participant:** Gabriel Marta
 - **Context:** Entrevista em Sala de Aula, juntamente com a equipa responsável do projeto.
 
