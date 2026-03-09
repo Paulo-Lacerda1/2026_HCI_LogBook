@@ -164,7 +164,7 @@ Nas entrevistas os participantes descreveram livremente as suas experiências e 
 ### Interview List 
 | Date       | Participant / Role | Key Insights                                                    | Link to Notes                |     |
 | ---------- | ------------------ | --------------------------------------------------------------- | ---------------------------- | --- |
-| 02-03-2026 | Jorge Marques / student      | A escolha do destino e chegar a consenso num grupo é difícil. Muitas ideias acabam por se perder nas conversas do WhatsApp. | [📄 Notes](interview-Jorge.md) |     |
+| 02-03-2026 | Jorge Marques / student      | A escolha do destino e chegar a consenso num grupo é difícil. Muitas ideias acabam por se perder nas conversas do WhatsApp. | [📄 Notes](interviews/interview-Jorge.md) |     |
 
 
 ### Common Themes & Patterns 
