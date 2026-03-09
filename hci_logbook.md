@@ -9,7 +9,7 @@ Work carried out by:
 **Title of the project**: SwipeTravel
 **Team:**
 - Student 1: João Vieira, 118643
-- Student 2; [Name and Number]
+- Student 2; Paulo Lacerda, 120202
 - Student 3: [Name and Number]
 
 ---
