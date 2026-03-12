@@ -165,6 +165,7 @@ Nas entrevistas os participantes descreveram livremente as suas experiências e 
 | Date       | Participant / Role | Key Insights                                                    | Link to Notes                |     |
 | ---------- | ------------------ | --------------------------------------------------------------- | ---------------------------- | --- |
 | 02-03-2026 | Jorge Marques / student      | A escolha do destino e chegar a consenso num grupo é difícil. Muitas ideias acabam por se perder nas conversas do WhatsApp. | [📄 Notes](interviews/interview-Jorge.md) |     |
+| 09-03-2026 | Gabriel Marta / student      | O mais difícil é escolher o destino, tendo em conta as atrações disponíveis no mesmo, e os gastos que vão ser necessários. | [📄 Notes](interviews/interview-Gabriel.md) |     |
 
 
 ### Common Themes & Patterns 
