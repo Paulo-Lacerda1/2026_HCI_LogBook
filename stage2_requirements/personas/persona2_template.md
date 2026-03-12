@@ -1,4 +1,4 @@
-# ![Persona Name](personas/persona2.jpeg)  
+# ![Persona Name](personas/persona2.png)  
 **Name:** João Silva  
 **Age:** 20 
 **Occupation:** Estudante de Multimédia 
