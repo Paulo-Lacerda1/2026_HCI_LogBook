@@ -10,7 +10,8 @@ Work carried out by:
 **Team:**
 - Student 1: João Vieira, 118643
 - Student 2; Paulo Lacerda, 120202
-- Student 3: [Name and Number]
+- Student 3: Martim Gomes, 119488
+- Student 4: Fernando Ferreira, 119758
 
 ---
 # [A. Stage 0 - Planning and Problem Identification](stage0_planning/a_stage_0_planning_problem_identification.md)
