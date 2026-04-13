@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,11 +8,69 @@
 </head>
 <body>
   <div class="app-shell">
-    <section id="screen-home" class="screen active">
+    <section id="screen-auth" class="screen active auth-screen">
+      <div class="auth-shell">
+        <div class="auth-hero">
+          <div class="auth-logo-wrap">
+            <img src="logo.png" alt="SwipeTravel logo" class="auth-logo" />
+          </div>
+          <h1>Planeia viagens em grupo sem confusão</h1>
+          <p>Entra na tua conta para continuar ou cria uma conta nova em poucos segundos.</p>
+        </div>
+
+        <div class="auth-card">
+          <div class="tab-row auth-tab-row">
+            <button class="chip active" data-auth-mode="login">Entrar</button>
+            <button class="chip" data-auth-mode="register">Criar conta</button>
+          </div>
+
+          <div id="auth-feedback" class="auth-feedback hidden"></div>
+
+          <div id="auth-login-form">
+            <div class="form-group">
+              <label for="login-email">Email</label>
+              <input id="login-email" class="text-input" type="email" placeholder="ana@email.com" />
+            </div>
+            <div class="form-group">
+              <label for="login-password">Palavra-passe</label>
+              <input id="login-password" class="text-input" type="password" placeholder="Escreve a tua palavra-passe" />
+            </div>
+            <button class="primary-btn" id="login-submit">Entrar</button>
+            <div class="helper-text auth-helper">
+              Conta demo: <strong>demo@swipetravel.app</strong> com palavra-passe <strong>123456</strong>
+            </div>
+          </div>
+
+          <div id="auth-register-form" class="hidden">
+            <div class="form-group">
+              <label for="register-name">Nome</label>
+              <input id="register-name" class="text-input" placeholder="Ana Silva" />
+            </div>
+            <div class="form-group">
+              <label for="register-email">Email</label>
+              <input id="register-email" class="text-input" type="email" placeholder="ana@email.com" />
+            </div>
+            <div class="form-group">
+              <label for="register-password">Palavra-passe</label>
+              <input id="register-password" class="text-input" type="password" placeholder="Cria uma palavra-passe" />
+            </div>
+            <div class="form-group">
+              <label for="register-confirm-password">Confirmar palavra-passe</label>
+              <input id="register-confirm-password" class="text-input" type="password" placeholder="Repete a palavra-passe" />
+            </div>
+            <button class="primary-btn" id="register-submit">Criar conta</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="screen-home" class="screen">
       <div class="topbar">
         <div class="brand">
           <h1>Hello, Utilizador 👋</h1>
-          <div class="subtitle">SwipeTravel</div>
+          <div class="brand-mark">
+            <img src="logo.png" alt="SwipeTravel logo" class="brand-logo" />
+            <div class="subtitle">SwipeTravel</div>
+          </div>
         </div>
         <button class="icon-btn" id="go-profile">👤</button>
       </div>
@@ -165,14 +223,16 @@
       <div class="section">
         <div class="row-between">
           <div class="member-info">
-            <div class="avatar">TU</div>
+            <div class="avatar" id="profile-avatar">TU</div>
             <div>
-              <strong>Utilizador</strong>
-              <div class="muted">Trip organiser</div>
+              <strong id="profile-user-name">Utilizador</strong>
+              <div class="muted" id="profile-user-role">Trip organiser</div>
             </div>
           </div>
           <span class="status-badge progress">Active</span>
         </div>
+        <div class="spacer-16"></div>
+        <button class="secondary-btn" id="logout-btn">Terminar sessão</button>
       </div>
 
       <div class="section">

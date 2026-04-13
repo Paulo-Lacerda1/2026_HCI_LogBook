@@ -1,10 +1,18 @@
+const STORAGE_KEYS = {
+  accounts: 'swipetravel.accounts',
+  session: 'swipetravel.session'
+};
+
 const state = {
-  screen: 'home',
+  screen: 'auth',
   tripsFilter: 'active',
   detailTab: 'votes',
   currentTripId: 1,
   suggestionIndexByTrip: {},
   createTripDuration: 4,
+  authMode: 'login',
+  authenticated: false,
+  currentUser: null,
   trips: [
     {
       id: 1,
@@ -29,8 +37,8 @@ const state = {
           day: 2,
           nowNextTitle: 'Now and next',
           items: [
-            '15:00 – Van Gogh Museum',
-            'Tickets already bought by João'
+            '15:00 - Van Gogh Museum',
+            'Tickets already bought by Joao'
           ]
         }
       ],
@@ -75,7 +83,7 @@ const state = {
       ],
       voteResults: {
         destination: 'Amsterdam',
-        accommodation: 'Airbnb Centro (€50/night)'
+        accommodation: 'Airbnb Centro (EUR50/night)'
       }
     },
     {
@@ -88,12 +96,12 @@ const state = {
       durationDays: 15,
       budget: 650,
       status: 'closed',
-      members: ['Maria', 'Pedro', 'Nuno', 'João'],
+      members: ['Maria', 'Pedro', 'Nuno', 'Joao'],
       votesCompleted: 6,
       votesTotal: 6,
       missingItem: '',
       approvedActivities: [
-        { name: 'Sagrada Família', price: 26 },
+        { name: 'Sagrada Familia', price: 26 },
         { name: 'Beach afternoon', price: 0 }
       ],
       itinerary: [
@@ -111,7 +119,7 @@ const state = {
           id: 21,
           title: 'Final settlement',
           amount: 0,
-          paidBy: '—',
+          paidBy: '-',
           owedBy: 'Nobody',
           owedAmount: 0,
           pending: false,
@@ -131,30 +139,221 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+function readJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function writeJSON(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getAccounts() {
+  return readJSON(STORAGE_KEYS.accounts, []);
+}
+
+function saveAccounts(accounts) {
+  writeJSON(STORAGE_KEYS.accounts, accounts);
+}
+
+function saveSession() {
+  if (!state.authenticated || !state.currentUser) {
+    localStorage.removeItem(STORAGE_KEYS.session);
+    return;
+  }
+
+  writeJSON(STORAGE_KEYS.session, {
+    email: state.currentUser.email
+  });
+}
+
+function seedDemoAccount() {
+  const accounts = getAccounts();
+
+  if (accounts.length) {
+    return;
+  }
+
+  saveAccounts([
+    {
+      name: 'Demo User',
+      email: 'demo@swipetravel.app',
+      password: '123456'
+    }
+  ]);
+}
+
+function loadSession() {
+  const session = readJSON(STORAGE_KEYS.session, null);
+  const accounts = getAccounts();
+  const matchedAccount = session
+    ? accounts.find((account) => account.email.toLowerCase() === session.email.toLowerCase())
+    : null;
+
+  if (matchedAccount) {
+    state.authenticated = true;
+    state.currentUser = matchedAccount;
+    state.screen = 'home';
+    return;
+  }
+
+  state.authenticated = false;
+  state.currentUser = null;
+  state.screen = 'auth';
+}
+
 function getCurrentTrip() {
   return state.trips.find((trip) => trip.id === state.currentTripId) || state.trips[0];
 }
 
 function formatCurrency(value) {
-  return `€${Number(value).toFixed(2).replace('.00', '')}`;
+  return `EUR${Number(value).toFixed(2).replace('.00', '')}`;
 }
 
 function initials(name) {
   return name
     .split(' ')
-    .map((part) => part[0])
+    .map((part) => part[0] || '')
     .join('')
     .slice(0, 2)
     .toUpperCase();
 }
 
+function showAuthFeedback(message, type = 'error') {
+  const feedback = $('#auth-feedback');
+  feedback.textContent = message;
+  feedback.className = `auth-feedback ${type}`;
+}
+
+function clearAuthFeedback() {
+  const feedback = $('#auth-feedback');
+  feedback.textContent = '';
+  feedback.className = 'auth-feedback hidden';
+}
+
+function clearAuthForms() {
+  [
+    '#login-email',
+    '#login-password',
+    '#register-name',
+    '#register-email',
+    '#register-password',
+    '#register-confirm-password'
+  ].forEach((selector) => {
+    const input = $(selector);
+    if (input) {
+      input.value = '';
+    }
+  });
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  clearAuthFeedback();
+  renderAuth();
+}
+
+function completeLogin(account) {
+  state.authenticated = true;
+  state.currentUser = account;
+  saveSession();
+  clearAuthFeedback();
+  setScreen('home');
+}
+
+function login() {
+  const email = $('#login-email').value.trim().toLowerCase();
+  const password = $('#login-password').value;
+
+  if (!email || !password) {
+    showAuthFeedback('Preenche o email e a palavra-passe.');
+    return;
+  }
+
+  const account = getAccounts().find(
+    (item) => item.email.toLowerCase() === email && item.password === password
+  );
+
+  if (!account) {
+    showAuthFeedback('Conta nao encontrada. Podes criar uma conta nova no separador de registo.');
+    return;
+  }
+
+  completeLogin(account);
+}
+
+function register() {
+  const name = $('#register-name').value.trim();
+  const email = $('#register-email').value.trim().toLowerCase();
+  const password = $('#register-password').value;
+  const confirmPassword = $('#register-confirm-password').value;
+  const accounts = getAccounts();
+
+  if (!name || !email || !password || !confirmPassword) {
+    showAuthFeedback('Preenche todos os campos para criar a conta.');
+    return;
+  }
+
+  if (!email.includes('@')) {
+    showAuthFeedback('Introduz um email valido.');
+    return;
+  }
+
+  if (password.length < 6) {
+    showAuthFeedback('A palavra-passe deve ter pelo menos 6 caracteres.');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showAuthFeedback('As palavras-passe nao coincidem.');
+    return;
+  }
+
+  if (accounts.some((account) => account.email.toLowerCase() === email)) {
+    showAuthFeedback('Ja existe uma conta com esse email.');
+    return;
+  }
+
+  const newAccount = { name, email, password };
+  accounts.push(newAccount);
+  saveAccounts(accounts);
+
+  $('#login-email').value = email;
+  $('#login-password').value = password;
+  $('#register-name').value = '';
+  $('#register-email').value = '';
+  $('#register-password').value = '';
+  $('#register-confirm-password').value = '';
+
+  setAuthMode('login');
+  showAuthFeedback('Conta criada com sucesso. Agora so falta entrar.', 'success');
+}
+
+function logout() {
+  state.authenticated = false;
+  state.currentUser = null;
+  state.authMode = 'login';
+  saveSession();
+  clearAuthForms();
+  setScreen('auth');
+}
+
 function setScreen(screen) {
-  state.screen = screen;
+  const targetScreen = state.authenticated || screen === 'auth' ? screen : 'auth';
+  state.screen = targetScreen;
+
   $$('.screen').forEach((el) => el.classList.remove('active'));
-  $(`#screen-${screen}`).classList.add('active');
+  const nextScreen = $(`#screen-${targetScreen}`);
+  if (nextScreen) {
+    nextScreen.classList.add('active');
+  }
 
   $$('.nav-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.nav === screen);
+    btn.classList.toggle('active', btn.dataset.nav === targetScreen);
   });
 
   render();
@@ -168,7 +367,22 @@ function closeModal(id) {
   $(`#${id}`).classList.remove('active');
 }
 
+function renderAuth() {
+  $$('[data-auth-mode]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.authMode === state.authMode);
+  });
+
+  $('#auth-login-form').classList.toggle('hidden', state.authMode !== 'login');
+  $('#auth-register-form').classList.toggle('hidden', state.authMode !== 'register');
+}
+
 function renderHome() {
+  const currentUserName = state.currentUser?.name || 'Utilizador';
+  const homeGreeting = $('#screen-home .brand h1');
+  if (homeGreeting) {
+    homeGreeting.textContent = `Ola, ${currentUserName} 👋`;
+  }
+
   const allPending = state.trips.flatMap((trip) =>
     trip.pendingActions.map((action) => ({
       ...action,
@@ -182,7 +396,7 @@ function renderHome() {
 
   const pendingContainer = $('#pending-actions-list');
   if (!allPending.length) {
-    pendingContainer.innerHTML = `<div class="empty-state">No pending actions right now :)</div>`;
+    pendingContainer.innerHTML = '<div class="empty-state">No pending actions right now :)</div>';
   } else {
     pendingContainer.innerHTML = allPending
       .map(
@@ -250,7 +464,7 @@ function renderTrips() {
 
   $('#trips-list').innerHTML = filtered.length
     ? filtered.map(renderTripCard).join('')
-    : `<div class="empty-state">No trips in this section yet.</div>`;
+    : '<div class="empty-state">No trips in this section yet.</div>';
 
   $$('[data-trip-filter]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tripFilter === state.tripsFilter);
@@ -259,6 +473,9 @@ function renderTrips() {
 
 function renderTripDetail() {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
 
   $('#trip-detail-title').textContent = trip.name;
   $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
@@ -266,14 +483,20 @@ function renderTripDetail() {
 
   $('#winning-destination').innerHTML = `<strong>📍 ${trip.voteResults.destination}</strong>`;
   $('#winning-accommodation').innerHTML = `<strong>🏠 ${trip.voteResults.accommodation}</strong>`;
-  $('#approved-activities').innerHTML = trip.approvedActivities
-    .map(
-      (activity) =>
-        `<div class="timeline-item">${activity.name} <span class="muted">(${formatCurrency(activity.price)})</span></div>`
-    )
-    .join('');
+  $('#approved-activities').innerHTML = trip.approvedActivities.length
+    ? trip.approvedActivities
+        .map(
+          (activity) =>
+            `<div class="timeline-item">${activity.name} <span class="muted">(${formatCurrency(activity.price)})</span></div>`
+        )
+        .join('')
+    : '<div class="empty-state">No approved activities yet.</div>';
 
-  const itineraryDay = trip.itinerary[0];
+  const itineraryDay = trip.itinerary[0] || {
+    day: 1,
+    items: ['Trip created successfully', 'Start adding votes, members and expenses']
+  };
+
   $('#itinerary-day-label').textContent = `Day ${itineraryDay.day}`;
   $('#itinerary-current').innerHTML = itineraryDay.items
     .map((item) => `<div class="timeline-item">${item}</div>`)
@@ -303,29 +526,31 @@ function renderTripDetail() {
     )
     .join('');
 
-  $('#expense-list').innerHTML = trip.expenses
-    .map(
-      (expense) => `
-        <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
-          <div class="row-between">
-            <div>
-              <strong>${expense.title}</strong>
-              <div class="expense-note">Paid by ${expense.paidBy}</div>
+  $('#expense-list').innerHTML = trip.expenses.length
+    ? trip.expenses
+        .map(
+          (expense) => `
+            <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
+              <div class="row-between">
+                <div>
+                  <strong>${expense.title}</strong>
+                  <div class="expense-note">Paid by ${expense.paidBy}</div>
+                </div>
+                <div class="expense-amount">${formatCurrency(expense.amount)}</div>
+              </div>
+              <div class="spacer-8"></div>
+              ${
+                expense.pending
+                  ? `<div class="muted">${expense.owedBy} owes ${formatCurrency(expense.owedAmount)}</div>
+                     <div class="spacer-8"></div>
+                     <button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as paid</button>`
+                  : '<div class="muted">Settled ✅</div>'
+              }
             </div>
-            <div class="expense-amount">${formatCurrency(expense.amount)}</div>
-          </div>
-          <div class="spacer-8"></div>
-          ${
-            expense.pending
-              ? `<div class="muted">${expense.owedBy} owes ${formatCurrency(expense.owedAmount)}</div>
-                 <div class="spacer-8"></div>
-                 <button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as paid</button>`
-              : `<div class="muted">Settled ✅</div>`
-          }
-        </div>
-      `
-    )
-    .join('');
+          `
+        )
+        .join('')
+    : '<div class="empty-state">No expenses yet.</div>';
 
   $$('[data-detail-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.detailTab === state.detailTab);
@@ -338,9 +563,13 @@ function renderTripDetail() {
 
 function renderSuggestions() {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
+
   $('#suggestions-title').textContent = `${trip.name} suggestions`;
 
-  if (!state.suggestionIndexByTrip[trip.id]) {
+  if (state.suggestionIndexByTrip[trip.id] === undefined) {
     state.suggestionIndexByTrip[trip.id] = 0;
   }
 
@@ -381,6 +610,12 @@ function renderProfile() {
   const totalTrips = state.trips.length;
   const uniqueMembers = new Set(state.trips.flatMap((trip) => trip.members));
   const totalExpenses = state.trips.reduce((sum, trip) => sum + trip.expenses.length, 0);
+  const profileName = state.currentUser?.name || 'Utilizador';
+  const profileEmail = state.currentUser?.email || 'Trip organiser';
+
+  $('#profile-user-name').textContent = profileName;
+  $('#profile-user-role').textContent = profileEmail;
+  $('#profile-avatar').textContent = initials(profileName || 'U');
 
   $('#profile-stat-trips').textContent = totalTrips;
   $('#profile-stat-members').textContent = uniqueMembers.size;
@@ -389,8 +624,11 @@ function renderProfile() {
 
 function renderExpensePayerOptions() {
   const trip = getCurrentTrip();
-  const select = $('#expense-payer');
+  if (!trip) {
+    return;
+  }
 
+  const select = $('#expense-payer');
   select.innerHTML = trip.members
     .map((member) => `<option value="${member}">${member}</option>`)
     .join('');
@@ -398,7 +636,14 @@ function renderExpensePayerOptions() {
   $('#expense-custom-count').value = trip.members.length;
 }
 
+function renderChrome() {
+  $('.app-shell').classList.toggle('auth-mode', !state.authenticated);
+  $('.bottom-nav').classList.toggle('hidden-nav', !state.authenticated);
+}
+
 function render() {
+  renderChrome();
+  renderAuth();
   renderHome();
   renderTrips();
   renderTripDetail();
@@ -420,7 +665,7 @@ function openTripFromAction(id) {
 
 function markExpensePaid(tripId, expenseId) {
   const trip = state.trips.find((item) => item.id === tripId);
-  const expense = trip.expenses.find((item) => item.id === expenseId);
+  const expense = trip?.expenses.find((item) => item.id === expenseId);
 
   if (expense) {
     expense.pending = false;
@@ -432,12 +677,20 @@ function markExpensePaid(tripId, expenseId) {
 
 function removeMember(memberName) {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
+
   trip.members = trip.members.filter((member) => member !== memberName);
   render();
 }
 
 function swipeSuggestion(type) {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
+
   const index = state.suggestionIndexByTrip[trip.id] || 0;
   const suggestion = trip.suggestions[index];
 
@@ -464,7 +717,7 @@ function createTrip() {
   const membersRaw = $('#trip-members').value.trim();
   const members = membersRaw
     ? membersRaw.split(',').map((item) => item.trim()).filter(Boolean)
-    : ['Maria'];
+    : [state.currentUser?.name || 'Maria'];
 
   if (!name || !destination) {
     alert('Please fill in at least the trip name and destination.');
@@ -530,6 +783,10 @@ function createTrip() {
 
 function saveExpense() {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
+
   const description = $('#expense-description').value.trim();
   const total = Number($('#expense-total').value || 0);
   const payer = $('#expense-payer').value;
@@ -565,6 +822,10 @@ function saveExpense() {
 
 function saveMember() {
   const trip = getCurrentTrip();
+  if (!trip) {
+    return;
+  }
+
   const name = $('#member-name').value.trim();
   const includePrevious = $('#include-previous-expenses').value === 'yes';
 
@@ -625,6 +886,11 @@ document.addEventListener('click', (event) => {
     state.tripsFilter = tripFilter.dataset.tripFilter;
     renderTrips();
   }
+
+  const authModeBtn = event.target.closest('[data-auth-mode]');
+  if (authModeBtn) {
+    setAuthMode(authModeBtn.dataset.authMode);
+  }
 });
 
 $('#go-profile').addEventListener('click', () => setScreen('profile'));
@@ -649,8 +915,8 @@ $('#save-expense-btn').addEventListener('click', saveExpense);
 $('#open-add-member').addEventListener('click', () => openModal('modal-add-member'));
 $('#save-member-btn').addEventListener('click', saveMember);
 
-$('#expense-split').addEventListener('change', (e) => {
-  $('#expense-custom-count-group').classList.toggle('hidden', e.target.value !== 'custom');
+$('#expense-split').addEventListener('change', (event) => {
+  $('#expense-custom-count-group').classList.toggle('hidden', event.target.value !== 'custom');
 });
 
 $('#trip-settings-btn').addEventListener('click', () => {
@@ -661,7 +927,27 @@ $('#export-pdf-btn').addEventListener('click', () => {
   alert('Export PDF action placeholder. You can later connect this to jsPDF or the browser print flow.');
 });
 
+$('#login-submit').addEventListener('click', login);
+$('#register-submit').addEventListener('click', register);
+$('#logout-btn').addEventListener('click', logout);
+
+['#login-password', '#register-confirm-password'].forEach((selector) => {
+  $(selector).addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      if (selector === '#login-password') {
+        login();
+      } else {
+        register();
+      }
+    }
+  });
+});
+
+seedDemoAccount();
+loadSession();
 render();
+setScreen(state.screen);
+
 window.openTrip = openTrip;
 window.openTripFromAction = openTripFromAction;
 window.markExpensePaid = markExpensePaid;
