@@ -63,6 +63,7 @@
         </div>
       </div>
     </section>
+    
     <section id="screen-home" class="screen">
       <div class="topbar">
         <div class="brand">
@@ -90,13 +91,54 @@
 
       <div class="section">
         <div class="section-title">
-          <h3>My trips</h3>
-          <span id="trip-count-label">0 trips</span>
+          <h3>Promoções de Maio</h3>
+          <span class="status-badge progress">Novidades</span>
         </div>
-        <div class="trip-list" id="home-trip-list"></div>
-        <div class="spacer-16"></div>
-        <button class="primary-btn" id="open-create-trip">+ Create new trip</button>
+        <div class="trip-list">
+          <div class="trip-card">
+            <div class="trip-card-header">
+              <div>
+                <h4 class="trip-title">✈️ Voos para Paris</h4>
+                <div class="trip-meta">Ida e volta • Várias companhias</div>
+              </div>
+              <span class="badge closed">-30%</span>
+            </div>
+            <div class="trip-footer">
+              <div class="expense-amount">A partir de €49</div>
+              <button class="small-link">Ver oferta</button>
+            </div>
+          </div>
+
+          <div class="trip-card">
+            <div class="trip-card-header">
+              <div>
+                <h4 class="trip-title">🏨 Escapadinha em Barcelona</h4>
+                <div class="trip-meta">Voo + 3 Noites (Centro)</div>
+              </div>
+              <span class="badge closed">-25%</span>
+            </div>
+            <div class="trip-footer">
+              <div class="expense-amount">A partir de €150</div>
+              <button class="small-link">Ver oferta</button>
+            </div>
+          </div>
+          
+          <div class="trip-card">
+            <div class="trip-card-header">
+              <div>
+                <h4 class="trip-title">🌍 Pacote Amesterdão</h4>
+                <div class="trip-meta">Para grupos de 4+ pessoas</div>
+              </div>
+              <span class="badge closed">-15%</span>
+            </div>
+            <div class="trip-footer">
+              <div class="expense-amount">A partir de €210</div>
+              <button class="small-link">Ver oferta</button>
+            </div>
+          </div>
+        </div>
       </div>
+      
     </section>
 
     <section id="screen-trips" class="screen">
@@ -105,7 +147,7 @@
           <h2>Travel groups</h2>
           <div class="subtitle">Planning and closed trips</div>
         </div>
-        <button class="icon-btn" id="trips-create-btn">＋</button>
+        <div class="topbar-placeholder"></div>
       </div>
 
       <div class="tab-row">
@@ -114,6 +156,9 @@
       </div>
 
       <div class="trip-list" id="trips-list"></div>
+      
+      <div class="spacer-16"></div>
+      <button class="primary-btn" id="open-create-trip">+ Create new trip</button>
     </section>
 
     <section id="screen-trip-detail" class="screen">
@@ -245,6 +290,14 @@
           <div class="trip-card"><strong id="profile-stat-members">0</strong><div class="muted">Group members involved</div></div>
           <div class="trip-card"><strong id="profile-stat-expenses">0</strong><div class="muted">Expenses registered</div></div>
         </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <h3>My trips</h3>
+          <span id="trip-count-label">0 trips</span>
+        </div>
+        <div class="trip-list" id="home-trip-list"></div>
       </div>
     </section>
 
