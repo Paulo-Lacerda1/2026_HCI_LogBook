@@ -139,6 +139,11 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+function safeListen(selector, event, fn) {
+  const el = $(selector);
+  if (el) el.addEventListener(event, fn);
+}
+
 function readJSON(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -165,26 +170,13 @@ function saveSession() {
     localStorage.removeItem(STORAGE_KEYS.session);
     return;
   }
-
-  writeJSON(STORAGE_KEYS.session, {
-    email: state.currentUser.email
-  });
+  writeJSON(STORAGE_KEYS.session, { email: state.currentUser.email });
 }
 
 function seedDemoAccount() {
   const accounts = getAccounts();
-
-  if (accounts.length) {
-    return;
-  }
-
-  saveAccounts([
-    {
-      name: 'Demo User',
-      email: 'demo@swipetravel.app',
-      password: '123456'
-    }
-  ]);
+  if (accounts.length) return;
+  saveAccounts([{ name: 'Demo User', email: 'demo@swipetravel.app', password: '123456' }]);
 }
 
 function loadSession() {
@@ -200,7 +192,6 @@ function loadSession() {
     state.screen = 'home';
     return;
   }
-
   state.authenticated = false;
   state.currentUser = null;
   state.screen = 'auth';
@@ -215,39 +206,27 @@ function formatCurrency(value) {
 }
 
 function initials(name) {
-  return name
-    .split(' ')
-    .map((part) => part[0] || '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  return name.split(' ').map((part) => part[0] || '').join('').slice(0, 2).toUpperCase();
 }
 
 function showAuthFeedback(message, type = 'error') {
   const feedback = $('#auth-feedback');
+  if (!feedback) return;
   feedback.textContent = message;
   feedback.className = `auth-feedback ${type}`;
 }
 
 function clearAuthFeedback() {
   const feedback = $('#auth-feedback');
+  if (!feedback) return;
   feedback.textContent = '';
   feedback.className = 'auth-feedback hidden';
 }
 
 function clearAuthForms() {
-  [
-    '#login-email',
-    '#login-password',
-    '#register-name',
-    '#register-email',
-    '#register-password',
-    '#register-confirm-password'
-  ].forEach((selector) => {
+  ['#login-email', '#login-password', '#register-name', '#register-email', '#register-password', '#register-confirm-password'].forEach((selector) => {
     const input = $(selector);
-    if (input) {
-      input.value = '';
-    }
+    if (input) input.value = '';
   });
 }
 
@@ -266,69 +245,54 @@ function completeLogin(account) {
 }
 
 function login() {
-  const email = $('#login-email').value.trim().toLowerCase();
-  const password = $('#login-password').value;
-
+  const emailInput = $('#login-email');
+  const passInput = $('#login-password');
+  if (!emailInput || !passInput) return;
+  const email = emailInput.value.trim().toLowerCase();
+  const password = passInput.value;
   if (!email || !password) {
     showAuthFeedback('Preenche o email e a palavra-passe.');
     return;
   }
-
-  const account = getAccounts().find(
-    (item) => item.email.toLowerCase() === email && item.password === password
-  );
-
+  const account = getAccounts().find((item) => item.email.toLowerCase() === email && item.password === password);
   if (!account) {
     showAuthFeedback('Conta nao encontrada. Podes criar uma conta nova no separador de registo.');
     return;
   }
-
   completeLogin(account);
 }
 
 function register() {
-  const name = $('#register-name').value.trim();
-  const email = $('#register-email').value.trim().toLowerCase();
-  const password = $('#register-password').value;
-  const confirmPassword = $('#register-confirm-password').value;
+  const name = $('#register-name')?.value.trim();
+  const email = $('#register-email')?.value.trim().toLowerCase();
+  const password = $('#register-password')?.value;
+  const confirmPassword = $('#register-confirm-password')?.value;
   const accounts = getAccounts();
-
   if (!name || !email || !password || !confirmPassword) {
     showAuthFeedback('Preenche todos os campos para criar a conta.');
     return;
   }
-
   if (!email.includes('@')) {
     showAuthFeedback('Introduz um email valido.');
     return;
   }
-
   if (password.length < 6) {
     showAuthFeedback('A palavra-passe deve ter pelo menos 6 caracteres.');
     return;
   }
-
   if (password !== confirmPassword) {
     showAuthFeedback('As palavras-passe nao coincidem.');
     return;
   }
-
   if (accounts.some((account) => account.email.toLowerCase() === email)) {
     showAuthFeedback('Ja existe uma conta com esse email.');
     return;
   }
-
   const newAccount = { name, email, password };
   accounts.push(newAccount);
   saveAccounts(accounts);
-
-  $('#login-email').value = email;
-  $('#login-password').value = password;
-  $('#register-name').value = '';
-  $('#register-email').value = '';
-  $('#register-password').value = '';
-  $('#register-confirm-password').value = '';
-
+  if($('#login-email')) $('#login-email').value = email;
+  if($('#login-password')) $('#login-password').value = password;
   setAuthMode('login');
   showAuthFeedback('Conta criada com sucesso. Agora so falta entrar.', 'success');
 }
@@ -345,99 +309,71 @@ function logout() {
 function setScreen(screen) {
   const targetScreen = state.authenticated || screen === 'auth' ? screen : 'auth';
   state.screen = targetScreen;
-
   $$('.screen').forEach((el) => el.classList.remove('active'));
   const nextScreen = $(`#screen-${targetScreen}`);
-  if (nextScreen) {
-    nextScreen.classList.add('active');
-  }
-
+  if (nextScreen) nextScreen.classList.add('active');
   $$('.nav-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.nav === targetScreen);
   });
-
   render();
 }
 
 function openModal(id) {
-  $(`#${id}`).classList.add('active');
+  const modal = $(`#${id}`);
+  if (modal) modal.classList.add('active');
 }
 
 function closeModal(id) {
-  $(`#${id}`).classList.remove('active');
+  const modal = $(`#${id}`);
+  if (modal) modal.classList.remove('active');
 }
 
 function renderAuth() {
   $$('[data-auth-mode]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.authMode === state.authMode);
   });
-
-  $('#auth-login-form').classList.toggle('hidden', state.authMode !== 'login');
-  $('#auth-register-form').classList.toggle('hidden', state.authMode !== 'register');
+  if($('#auth-login-form')) $('#auth-login-form').classList.toggle('hidden', state.authMode !== 'login');
+  if($('#auth-register-form')) $('#auth-register-form').classList.toggle('hidden', state.authMode !== 'register');
 }
 
 function renderHome() {
   const currentUserName = state.currentUser?.name || 'Utilizador';
   const homeGreeting = $('#screen-home .brand h1');
-  if (homeGreeting) {
-    homeGreeting.textContent = `Ola, ${currentUserName} 👋`;
-  }
+  if (homeGreeting) homeGreeting.textContent = `Ola, ${currentUserName} 👋`;
 
   const allPending = state.trips.flatMap((trip) =>
-    trip.pendingActions.map((action) => ({
-      ...action,
-      tripId: trip.id,
-      tripName: trip.name
-    }))
+    trip.pendingActions.map((action) => ({ ...action, tripId: trip.id, tripName: trip.name }))
   );
 
-  $('#pending-count-label').textContent = `${allPending.length} item${allPending.length === 1 ? '' : 's'}`;
-  $('#trip-count-label').textContent = `${state.trips.length} trip${state.trips.length === 1 ? '' : 's'}`;
+  const countLabel = $('#pending-count-label');
+  if(countLabel) countLabel.textContent = `${allPending.length} item${allPending.length === 1 ? '' : 's'}`;
+  const tripCountLabel = $('#trip-count-label');
+  if(tripCountLabel) tripCountLabel.textContent = `${state.trips.length} trip${state.trips.length === 1 ? '' : 's'}`;
 
   const pendingContainer = $('#pending-actions-list');
-  if (!allPending.length) {
-    pendingContainer.innerHTML = '<div class="empty-state">No pending actions right now :)</div>';
-  } else {
-    pendingContainer.innerHTML = allPending
-      .map(
-        (action) => `
-          <div class="action-card">
-            <strong>${action.tripName}</strong>
-            <div class="muted">${action.description}</div>
-            <div class="spacer-8"></div>
-            <button class="small-link" onclick="openTripFromAction(${action.tripId})">${action.cta}</button>
-          </div>
-        `
-      )
-      .join('');
+  if (pendingContainer) {
+    if (!allPending.length) {
+      pendingContainer.innerHTML = '<div class="empty-state">No pending actions right now :)</div>';
+    } else {
+      pendingContainer.innerHTML = allPending.map((action) => `
+        <div class="action-card">
+          <strong>${action.tripName}</strong>
+          <div class="muted">${action.description}</div>
+          <div class="spacer-8"></div>
+          <button class="small-link" onclick="openTripFromAction(${action.tripId})">${action.cta}</button>
+        </div>
+      `).join('');
+    }
   }
-
-  $('#home-trip-list').innerHTML = state.trips.map(renderTripCard).join('');
+  const homeTripList = $('#home-trip-list');
+  if(homeTripList) homeTripList.innerHTML = state.trips.map(renderTripCard).join('');
 }
 
 function renderTripCard(trip) {
   const memberCount = trip.members.length;
-
-  const badgeText =
-    trip.status === 'closed'
-      ? 'Closed'
-      : trip.votesCompleted < trip.votesTotal
-        ? 'Planning'
-        : 'Ongoing';
-
-  const badgeClass =
-    trip.status === 'closed'
-      ? 'closed'
-      : trip.votesCompleted < trip.votesTotal
-        ? 'planning'
-        : 'progress';
-
-  const statusLine =
-    trip.status === 'closed'
-      ? 'Accounts settled and trip finished'
-      : trip.missingItem
-        ? `Missing ${trip.missingItem}`
-        : 'Trip ready';
+  const badgeText = trip.status === 'closed' ? 'Closed' : trip.votesCompleted < trip.votesTotal ? 'Planning' : 'Ongoing';
+  const badgeClass = trip.status === 'closed' ? 'closed' : trip.votesCompleted < trip.votesTotal ? 'planning' : 'progress';
+  const statusLine = trip.status === 'closed' ? 'Accounts settled and trip finished' : trip.missingItem ? `Missing ${trip.missingItem}` : 'Trip ready';
 
   return `
     <div class="trip-card" onclick="openTrip(${trip.id})">
@@ -458,14 +394,11 @@ function renderTripCard(trip) {
 
 function renderTrips() {
   const isClosed = state.tripsFilter === 'closed';
-  const filtered = state.trips.filter((trip) =>
-    isClosed ? trip.status === 'closed' : trip.status !== 'closed'
-  );
-
-  $('#trips-list').innerHTML = filtered.length
-    ? filtered.map(renderTripCard).join('')
-    : '<div class="empty-state">No trips in this section yet.</div>';
-
+  const filtered = state.trips.filter((trip) => isClosed ? trip.status === 'closed' : trip.status !== 'closed');
+  const tripsList = $('#trips-list');
+  if(tripsList) {
+    tripsList.innerHTML = filtered.length ? filtered.map(renderTripCard).join('') : '<div class="empty-state">No trips in this section yet.</div>';
+  }
   $$('[data-trip-filter]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tripFilter === state.tripsFilter);
   });
@@ -473,123 +406,80 @@ function renderTrips() {
 
 function renderTripDetail() {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
+  if (!trip) return;
+  if($('#trip-detail-title')) $('#trip-detail-title').textContent = trip.name;
+  if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
+  if($('#vote-progress-label')) $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
+  if($('#winning-destination')) $('#winning-destination').innerHTML = `<strong>📍 ${trip.voteResults.destination}</strong>`;
+  if($('#winning-accommodation')) $('#winning-accommodation').innerHTML = `<strong>🏠 ${trip.voteResults.accommodation}</strong>`;
+  
+  const activitiesContainer = $('#approved-activities');
+  if(activitiesContainer) {
+    activitiesContainer.innerHTML = trip.approvedActivities.length
+      ? trip.approvedActivities.map((activity) => `<div class="timeline-item">${activity.name} <span class="muted">(${formatCurrency(activity.price)})</span></div>`).join('')
+      : '<div class="empty-state">No approved activities yet.</div>';
   }
 
-  $('#trip-detail-title').textContent = trip.name;
-  $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
-  $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
-
-  $('#winning-destination').innerHTML = `<strong>📍 ${trip.voteResults.destination}</strong>`;
-  $('#winning-accommodation').innerHTML = `<strong>🏠 ${trip.voteResults.accommodation}</strong>`;
-  $('#approved-activities').innerHTML = trip.approvedActivities.length
-    ? trip.approvedActivities
-        .map(
-          (activity) =>
-            `<div class="timeline-item">${activity.name} <span class="muted">(${formatCurrency(activity.price)})</span></div>`
-        )
-        .join('')
-    : '<div class="empty-state">No approved activities yet.</div>';
-
-  const itineraryDay = trip.itinerary[0] || {
-    day: 1,
-    items: ['Trip created successfully', 'Start adding votes, members and expenses']
-  };
-
-  $('#itinerary-day-label').textContent = `Day ${itineraryDay.day}`;
-  $('#itinerary-current').innerHTML = itineraryDay.items
-    .map((item) => `<div class="timeline-item">${item}</div>`)
-    .join('');
+  const itineraryDay = trip.itinerary[0] || { day: 1, items: ['Trip created successfully', 'Start adding votes, members and expenses'] };
+  if($('#itinerary-day-label')) $('#itinerary-day-label').textContent = `Day ${itineraryDay.day}`;
+  if($('#itinerary-current')) $('#itinerary-current').innerHTML = itineraryDay.items.map((item) => `<div class="timeline-item">${item}</div>`).join('');
 
   const totalSpent = trip.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const pendingExpenses = trip.expenses.filter((expense) => expense.pending);
+  if($('#group-total-spent')) $('#group-total-spent').textContent = formatCurrency(totalSpent);
+  if($('#pending-balance-count')) $('#pending-balance-count').textContent = `${pendingExpenses.length} pending`;
+  if($('#expense-quick-status')) $('#expense-quick-status').textContent = pendingExpenses.length ? 'Balances still open' : 'Nothing owed';
 
-  $('#group-total-spent').textContent = formatCurrency(totalSpent);
-  $('#pending-balance-count').textContent = `${pendingExpenses.length} pending`;
-  $('#expense-quick-status').textContent = pendingExpenses.length ? 'Balances still open' : 'Nothing owed';
-
-  $('#member-list-inline').innerHTML = trip.members
-    .map(
-      (member) => `
-        <div class="member-row">
-          <div class="member-info">
-            <div class="avatar">${initials(member)}</div>
-            <div>
-              <strong>${member}</strong>
-              <div class="muted">Trip member</div>
-            </div>
-          </div>
-          <button class="small-link" onclick="removeMember('${member.replace(/'/g, "\\'")}')">Remove</button>
+  if($('#member-list-inline')) {
+    $('#member-list-inline').innerHTML = trip.members.map((member) => `
+      <div class="member-row">
+        <div class="member-info">
+          <div class="avatar">${initials(member)}</div>
+          <div><strong>${member}</strong><div class="muted">Trip member</div></div>
         </div>
-      `
-    )
-    .join('');
+        <button class="small-link" onclick="removeMember('${member.replace(/'/g, "\\'")}')">Remove</button>
+      </div>
+    `).join('');
+  }
 
-  $('#expense-list').innerHTML = trip.expenses.length
-    ? trip.expenses
-        .map(
-          (expense) => `
-            <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
-              <div class="row-between">
-                <div>
-                  <strong>${expense.title}</strong>
-                  <div class="expense-note">Paid by ${expense.paidBy}</div>
-                </div>
-                <div class="expense-amount">${formatCurrency(expense.amount)}</div>
-              </div>
-              <div class="spacer-8"></div>
-              ${
-                expense.pending
-                  ? `<div class="muted">${expense.owedBy} owes ${formatCurrency(expense.owedAmount)}</div>
-                     <div class="spacer-8"></div>
-                     <button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as paid</button>`
-                  : '<div class="muted">Settled ✅</div>'
-              }
-            </div>
-          `
-        )
-        .join('')
-    : '<div class="empty-state">No expenses yet.</div>';
+  const expList = $('#expense-list');
+  if(expList) {
+    expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
+      <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
+        <div class="row-between">
+          <div><strong>${expense.title}</strong><div class="expense-note">Paid by ${expense.paidBy}</div></div>
+          <div class="expense-amount">${formatCurrency(expense.amount)}</div>
+        </div>
+        <div class="spacer-8"></div>
+        ${expense.pending ? `<div class="muted">${expense.owedBy} owes ${formatCurrency(expense.owedAmount)}</div><div class="spacer-8"></div><button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as paid</button>` : '<div class="muted">Settled ✅</div>'}
+      </div>
+    `).join('') : '<div class="empty-state">No expenses yet.</div>';
+  }
 
-  $$('[data-detail-tab]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.detailTab === state.detailTab);
-  });
-
-  $('#trip-tab-votes').classList.toggle('hidden', state.detailTab !== 'votes');
-  $('#trip-tab-itinerary').classList.toggle('hidden', state.detailTab !== 'itinerary');
-  $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
+  $$('[data-detail-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.detailTab === state.detailTab));
+  if($('#trip-tab-votes')) $('#trip-tab-votes').classList.toggle('hidden', state.detailTab !== 'votes');
+  if($('#trip-tab-itinerary')) $('#trip-tab-itinerary').classList.toggle('hidden', state.detailTab !== 'itinerary');
+  if($('#trip-tab-expenses')) $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
 }
 
 function renderSuggestions() {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
-  $('#suggestions-title').textContent = `${trip.name} suggestions`;
-
-  if (state.suggestionIndexByTrip[trip.id] === undefined) {
-    state.suggestionIndexByTrip[trip.id] = 0;
-  }
+  if (!trip) return;
+  if($('#suggestions-title')) $('#suggestions-title').textContent = `${trip.name} suggestions`;
+  if (state.suggestionIndexByTrip[trip.id] === undefined) state.suggestionIndexByTrip[trip.id] = 0;
 
   const index = state.suggestionIndexByTrip[trip.id];
   const suggestion = trip.suggestions[index];
   const container = $('#suggestion-deck');
+  if (!container) return;
 
   if (!suggestion) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <strong>All suggestions reviewed</strong>
-        <div class="spacer-8"></div>
-        <div>You already swiped through every destination suggestion.</div>
-      </div>
-    `;
+    container.innerHTML = `<div class="empty-state"><strong>All suggestions reviewed</strong><div class="spacer-8"></div><div>You already swiped through every destination suggestion.</div></div>`;
     return;
   }
 
   container.innerHTML = `
-    <div class="suggestion-card">
+    <div class="suggestion-card" id="active-suggestion-card">
       <div class="suggestion-image">${suggestion.emoji}</div>
       <div class="suggestion-body">
         <div class="muted">Suggestion #${index + 1}</div>
@@ -604,6 +494,58 @@ function renderSuggestions() {
       </div>
     </div>
   `;
+
+  // Lógica de Swipe
+  const card = $('#active-suggestion-card');
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+
+  const onStart = (e) => {
+    isDragging = true;
+    startX = e.pageX || e.touches[0].pageX;
+    card.style.transition = 'none';
+  };
+
+  const onMove = (e) => {
+    if (!isDragging) return;
+    currentX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+    const diff = currentX - startX;
+    card.style.transform = `translateX(${diff}px) rotate(${diff / 15}deg)`;
+    
+    // Feedback visual de cor (opcional)
+    if (diff > 50) card.style.background = '#ecfdf3'; // Like
+    else if (diff < -50) card.style.background = '#fff0f0'; // Skip
+    else card.style.background = 'white';
+  };
+
+  const onEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = currentX - startX;
+    const threshold = 100;
+
+    if (diff > threshold) {
+      card.style.transition = 'transform 0.3s ease';
+      card.style.transform = 'translateX(1000px) rotate(30deg)';
+      setTimeout(() => swipeSuggestion('like'), 200);
+    } else if (diff < -threshold) {
+      card.style.transition = 'transform 0.3s ease';
+      card.style.transform = 'translateX(-1000px) rotate(-30deg)';
+      setTimeout(() => swipeSuggestion('skip'), 200);
+    } else {
+      card.style.transition = 'transform 0.3s ease, background 0.3s ease';
+      card.style.transform = 'translateX(0) rotate(0)';
+      card.style.background = 'white';
+    }
+  };
+
+  card.addEventListener('mousedown', onStart);
+  card.addEventListener('touchstart', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove);
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchend', onEnd);
 }
 
 function renderProfile() {
@@ -613,32 +555,25 @@ function renderProfile() {
   const profileName = state.currentUser?.name || 'Utilizador';
   const profileEmail = state.currentUser?.email || 'Trip organiser';
 
-  $('#profile-user-name').textContent = profileName;
-  $('#profile-user-role').textContent = profileEmail;
-  $('#profile-avatar').textContent = initials(profileName || 'U');
-
-  $('#profile-stat-trips').textContent = totalTrips;
-  $('#profile-stat-members').textContent = uniqueMembers.size;
-  $('#profile-stat-expenses').textContent = totalExpenses;
+  if($('#profile-user-name')) $('#profile-user-name').textContent = profileName;
+  if($('#profile-user-role')) $('#profile-user-role').textContent = profileEmail;
+  if($('#profile-avatar')) $('#profile-avatar').textContent = initials(profileName || 'U');
+  if($('#profile-stat-trips')) $('#profile-stat-trips').textContent = totalTrips;
+  if($('#profile-stat-members')) $('#profile-stat-members').textContent = uniqueMembers.size;
+  if($('#profile-stat-expenses')) $('#profile-stat-expenses').textContent = totalExpenses;
 }
 
 function renderExpensePayerOptions() {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
+  if (!trip) return;
   const select = $('#expense-payer');
-  select.innerHTML = trip.members
-    .map((member) => `<option value="${member}">${member}</option>`)
-    .join('');
-
-  $('#expense-custom-count').value = trip.members.length;
+  if(select) select.innerHTML = trip.members.map((member) => `<option value="${member}">${member}</option>`).join('');
+  if($('#expense-custom-count')) $('#expense-custom-count').value = trip.members.length;
 }
 
 function renderChrome() {
-  $('.app-shell').classList.toggle('auth-mode', !state.authenticated);
-  $('.bottom-nav').classList.toggle('hidden-nav', !state.authenticated);
+  if($('.app-shell')) $('.app-shell').classList.toggle('auth-mode', !state.authenticated);
+  if($('.bottom-nav')) $('.bottom-nav').classList.toggle('hidden-nav', !state.authenticated);
 }
 
 function render() {
@@ -650,7 +585,7 @@ function render() {
   renderSuggestions();
   renderProfile();
   renderExpensePayerOptions();
-  $('#duration-value').textContent = state.createTripDuration;
+  if($('#duration-value')) $('#duration-value').textContent = state.createTripDuration;
 }
 
 function openTrip(id) {
@@ -659,50 +594,32 @@ function openTrip(id) {
   setScreen('trip-detail');
 }
 
-function openTripFromAction(id) {
-  openTrip(id);
-}
+function openTripFromAction(id) { openTrip(id); }
 
 function markExpensePaid(tripId, expenseId) {
   const trip = state.trips.find((item) => item.id === tripId);
   const expense = trip?.expenses.find((item) => item.id === expenseId);
-
-  if (expense) {
-    expense.pending = false;
-    expense.owedAmount = 0;
-  }
-
+  if (expense) { expense.pending = false; expense.owedAmount = 0; }
   render();
 }
 
 function removeMember(memberName) {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
+  if (!trip) return;
   trip.members = trip.members.filter((member) => member !== memberName);
   render();
 }
 
 function swipeSuggestion(type) {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
+  if (!trip) return;
   const index = state.suggestionIndexByTrip[trip.id] || 0;
   const suggestion = trip.suggestions[index];
-
-  if (!suggestion) {
-    return;
-  }
-
+  if (!suggestion) return;
   if (type === 'like') {
     trip.voteResults.destination = suggestion.city;
     trip.votesCompleted = Math.min(trip.votesTotal, trip.votesCompleted + 1);
   }
-
   state.suggestionIndexByTrip[trip.id] = index + 1;
   renderSuggestions();
   renderTripDetail();
@@ -711,237 +628,96 @@ function swipeSuggestion(type) {
 }
 
 function createTrip() {
-  const name = $('#trip-name').value.trim();
-  const destination = $('#trip-destination').value.trim();
-  const budget = Number($('#trip-budget').value || 0);
-  const membersRaw = $('#trip-members').value.trim();
-  const members = membersRaw
-    ? membersRaw.split(',').map((item) => item.trim()).filter(Boolean)
-    : [state.currentUser?.name || 'Maria'];
-
-  if (!name || !destination) {
-    alert('Please fill in at least the trip name and destination.');
-    return;
-  }
+  const name = $('#trip-name')?.value.trim();
+  const destination = $('#trip-destination')?.value.trim();
+  const budget = Number($('#trip-budget')?.value || 0);
+  const membersRaw = $('#trip-members')?.value.trim();
+  const members = membersRaw ? membersRaw.split(',').map((item) => item.trim()).filter(Boolean) : [state.currentUser?.name || 'Maria'];
+  if (!name || !destination) { alert('Please fill in at least the trip name and destination.'); return; }
 
   const newTrip = {
-    id: Date.now(),
-    name,
-    destination,
-    city: destination,
-    start: 'TBD',
-    end: 'TBD',
-    durationDays: state.createTripDuration,
-    budget,
-    status: 'planning',
-    members,
-    votesCompleted: 0,
-    votesTotal: 3,
-    missingItem: 'Destination, accommodation and activities',
-    approvedActivities: [],
-    itinerary: [
-      {
-        day: 1,
-        nowNextTitle: 'Now and next',
-        items: ['Trip created successfully', 'Start adding votes, members and expenses']
-      }
-    ],
-    expenses: [],
-    pendingActions: [
-      {
-        title: 'Start planning',
-        description: `Complete the first votes for ${name}.`,
-        cta: 'Open trip'
-      }
-    ],
-    suggestions: [
-      {
-        city: destination,
-        subtitle: 'Suggested destination',
-        avgCost: budget || 200,
-        emoji: '🧳'
-      }
-    ],
-    voteResults: {
-      destination,
-      accommodation: 'Not chosen yet'
-    }
+    id: Date.now(), name, destination, city: destination, start: 'TBD', end: 'TBD', durationDays: state.createTripDuration, budget, status: 'planning', members, votesCompleted: 0, votesTotal: 3, missingItem: 'Destination, accommodation and activities', approvedActivities: [], itinerary: [{ day: 1, nowNextTitle: 'Now and next', items: ['Trip created successfully', 'Start adding votes, members and expenses'] }], expenses: [], pendingActions: [{ title: 'Start planning', description: `Complete the first votes for ${name}.`, cta: 'Open trip' }], suggestions: [{ city: destination, subtitle: 'Suggested destination', avgCost: budget || 200, emoji: '🧳' }], voteResults: { destination, accommodation: 'Not chosen yet' }
   };
-
   state.trips.unshift(newTrip);
   state.currentTripId = newTrip.id;
-
   closeModal('modal-create-trip');
-  $('#trip-name').value = '';
-  $('#trip-destination').value = '';
-  $('#trip-budget').value = '';
-  $('#trip-members').value = '';
+  if($('#trip-name')) $('#trip-name').value = '';
+  if($('#trip-destination')) $('#trip-destination').value = '';
+  if($('#trip-budget')) $('#trip-budget').value = '';
+  if($('#trip-members')) $('#trip-members').value = '';
   state.createTripDuration = 4;
-
   setScreen('trip-detail');
 }
 
 function saveExpense() {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
-  const description = $('#expense-description').value.trim();
-  const total = Number($('#expense-total').value || 0);
-  const payer = $('#expense-payer').value;
-  const splitMode = $('#expense-split').value;
-  const participants =
-    splitMode === 'custom' ? Number($('#expense-custom-count').value || 1) : trip.members.length;
-
-  if (!description || !total || !payer) {
-    alert('Please fill in the expense fields.');
-    return;
-  }
-
+  if (!trip) return;
+  const description = $('#expense-description')?.value.trim();
+  const total = Number($('#expense-total')?.value || 0);
+  const payer = $('#expense-payer')?.value;
+  const splitMode = $('#expense-split')?.value;
+  const participants = splitMode === 'custom' ? Number($('#expense-custom-count')?.value || 1) : trip.members.length;
+  if (!description || !total || !payer) { alert('Please fill in the expense fields.'); return; }
   const others = trip.members.filter((member) => member !== payer);
   const owedBy = others[0] || payer;
   const owedAmount = participants > 0 ? total / participants : total;
-
-  trip.expenses.unshift({
-    id: Date.now(),
-    title: description,
-    amount: total,
-    paidBy: payer,
-    owedBy,
-    owedAmount,
-    pending: true,
-    participants
-  });
-
-  $('#expense-description').value = '';
-  $('#expense-total').value = '';
+  trip.expenses.unshift({ id: Date.now(), title: description, amount: total, paidBy: payer, owedBy, owedAmount, pending: true, participants });
+  if($('#expense-description')) $('#expense-description').value = '';
+  if($('#expense-total')) $('#expense-total').value = '';
   closeModal('modal-add-expense');
   render();
 }
 
 function saveMember() {
   const trip = getCurrentTrip();
-  if (!trip) {
-    return;
-  }
-
-  const name = $('#member-name').value.trim();
-  const includePrevious = $('#include-previous-expenses').value === 'yes';
-
-  if (!name) {
-    alert('Please enter a member name.');
-    return;
-  }
-
-  if (!trip.members.includes(name)) {
-    trip.members.push(name);
-  }
-
+  if (!trip) return;
+  const name = $('#member-name')?.value.trim();
+  const includePrevious = $('#include-previous-expenses')?.value === 'yes';
+  if (!name) { alert('Please enter a member name.'); return; }
+  if (!trip.members.includes(name)) trip.members.push(name);
   if (includePrevious) {
-    trip.expenses.forEach((expense) => {
-      expense.participants += 1;
-      if (expense.pending) {
-        expense.owedAmount = Number(expense.amount) / expense.participants;
-      }
-    });
+    trip.expenses.forEach((expense) => { expense.participants += 1; if (expense.pending) expense.owedAmount = Number(expense.amount) / expense.participants; });
   }
-
-  $('#member-name').value = '';
-  $('#include-previous-expenses').value = 'no';
+  if($('#member-name')) $('#member-name').value = '';
+  if($('#include-previous-expenses')) $('#include-previous-expenses').value = 'no';
   closeModal('modal-add-member');
   render();
-
-  alert(
-    includePrevious
-      ? `${name} added and included in previous expenses.`
-      : `${name} added successfully. Previous expenses were kept unchanged.`
-  );
+  alert(includePrevious ? `${name} added and included in previous expenses.` : `${name} added successfully.`);
 }
 
 document.addEventListener('click', (event) => {
   const nav = event.target.closest('[data-nav]');
-  if (nav) {
-    setScreen(nav.dataset.nav);
-  }
-
+  if (nav) setScreen(nav.dataset.nav);
   const back = event.target.closest('[data-back]');
-  if (back) {
-    setScreen(back.dataset.back);
-  }
-
+  if (back) setScreen(back.dataset.back);
   const closeBtn = event.target.closest('[data-close-modal]');
-  if (closeBtn) {
-    closeModal(closeBtn.dataset.closeModal);
-  }
-
+  if (closeBtn) closeModal(closeBtn.dataset.closeModal);
   const detailTab = event.target.closest('[data-detail-tab]');
-  if (detailTab) {
-    state.detailTab = detailTab.dataset.detailTab;
-    renderTripDetail();
-  }
-
+  if (detailTab) { state.detailTab = detailTab.dataset.detailTab; renderTripDetail(); }
   const tripFilter = event.target.closest('[data-trip-filter]');
-  if (tripFilter) {
-    state.tripsFilter = tripFilter.dataset.tripFilter;
-    renderTrips();
-  }
-
+  if (tripFilter) { state.tripsFilter = tripFilter.dataset.tripFilter; renderTrips(); }
   const authModeBtn = event.target.closest('[data-auth-mode]');
-  if (authModeBtn) {
-    setAuthMode(authModeBtn.dataset.authMode);
-  }
+  if (authModeBtn) setAuthMode(authModeBtn.dataset.authMode);
 });
 
-$('#go-profile').addEventListener('click', () => setScreen('profile'));
-$('#open-create-trip').addEventListener('click', () => openModal('modal-create-trip'));
-$('#trips-create-btn').addEventListener('click', () => openModal('modal-create-trip'));
-$('#save-trip-btn').addEventListener('click', createTrip);
-$('#create-trip-submit').addEventListener('click', createTrip);
-
-$('#duration-minus').addEventListener('click', () => {
-  state.createTripDuration = Math.max(1, state.createTripDuration - 1);
-  render();
+safeListen('#go-profile', 'click', () => setScreen('profile'));
+safeListen('#open-create-trip', 'click', () => openModal('modal-create-trip'));
+safeListen('#save-trip-btn', 'click', createTrip);
+safeListen('#create-trip-submit', 'click', createTrip);
+safeListen('#duration-minus', 'click', () => { state.createTripDuration = Math.max(1, state.createTripDuration - 1); render(); });
+safeListen('#duration-plus', 'click', () => { state.createTripDuration += 1; render(); });
+safeListen('#open-suggestions', 'click', () => setScreen('suggestions'));
+safeListen('#open-add-expense-inline', 'click', () => openModal('modal-add-expense'));
+safeListen('#save-expense-btn', 'click', saveExpense);
+safeListen('#open-add-member', 'click', () => openModal('modal-add-member'));
+safeListen('#save-member-btn', 'click', saveMember);
+safeListen('#expense-split', 'change', (event) => {
+  const customGroup = $('#expense-custom-count-group');
+  if(customGroup) customGroup.classList.toggle('hidden', event.target.value !== 'custom');
 });
-
-$('#duration-plus').addEventListener('click', () => {
-  state.createTripDuration += 1;
-  render();
-});
-
-$('#open-suggestions').addEventListener('click', () => setScreen('suggestions'));
-$('#open-add-expense-inline').addEventListener('click', () => openModal('modal-add-expense'));
-$('#save-expense-btn').addEventListener('click', saveExpense);
-$('#open-add-member').addEventListener('click', () => openModal('modal-add-member'));
-$('#save-member-btn').addEventListener('click', saveMember);
-
-$('#expense-split').addEventListener('change', (event) => {
-  $('#expense-custom-count-group').classList.toggle('hidden', event.target.value !== 'custom');
-});
-
-$('#trip-settings-btn').addEventListener('click', () => {
-  alert('Trip settings screen can be the next step of the implementation.');
-});
-
-$('#export-pdf-btn').addEventListener('click', () => {
-  alert('Export PDF action placeholder. You can later connect this to jsPDF or the browser print flow.');
-});
-
-$('#login-submit').addEventListener('click', login);
-$('#register-submit').addEventListener('click', register);
-$('#logout-btn').addEventListener('click', logout);
-
-['#login-password', '#register-confirm-password'].forEach((selector) => {
-  $(selector).addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      if (selector === '#login-password') {
-        login();
-      } else {
-        register();
-      }
-    }
-  });
-});
+safeListen('#login-submit', 'click', login);
+safeListen('#register-submit', 'click', register);
+safeListen('#logout-btn', 'click', logout);
 
 seedDemoAccount();
 loadSession();
