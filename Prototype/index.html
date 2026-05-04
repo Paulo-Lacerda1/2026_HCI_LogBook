@@ -252,6 +252,11 @@
         <div class="topbar-placeholder"></div>
       </div>
 
+      <button class="primary-btn" id="open-add-suggestion">
+      + Add suggestion
+      </button>
+
+    <div class="spacer-16"></div>
       <div id="suggestion-deck"></div>
     </section>
 
@@ -391,37 +396,74 @@
     </div>
   </div>
 
-  <div class="modal" id="modal-add-member">
+    <div class="modal" id="modal-add-member">
+      <div class="modal-sheet">
+        <div class="topbar modal-topbar">
+          <button class="icon-btn" data-close-modal="modal-add-member">✕</button>
+          <div class="brand centered-brand">
+            <h2>Add member</h2>
+          </div>
+          <div class="topbar-placeholder"></div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-group">
+            <label for="member-name">Member name</label>
+            <input id="member-name" class="text-input" placeholder="João" />
+          </div>
+          <div class="form-group">
+            <label for="include-previous-expenses">Include in previous expenses?</label>
+            <select id="include-previous-expenses" class="select-input">
+              <option value="no">No, only future expenses</option>
+              <option value="yes">Yes, include all previous expenses</option>
+            </select>
+            <div class="helper-text">This follows the behaviour shown in your prototype.</div>
+          </div>
+          <div class="btn-row">
+            <button class="secondary-btn" data-close-modal="modal-add-member">Cancel</button>
+            <button class="primary-btn" id="save-member-btn">Add member</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="modal-add-suggestion">
     <div class="modal-sheet">
       <div class="topbar modal-topbar">
-        <button class="icon-btn" data-close-modal="modal-add-member">✕</button>
+        <button class="icon-btn" data-close-modal="modal-add-suggestion">✕</button>
         <div class="brand centered-brand">
-          <h2>Add member</h2>
+          <h2>Add suggestion</h2>
         </div>
         <div class="topbar-placeholder"></div>
       </div>
 
       <div class="form-card">
         <div class="form-group">
-          <label for="member-name">Member name</label>
-          <input id="member-name" class="text-input" placeholder="João" />
+          <label for="suggestion-city">Destination</label>
+          <input id="suggestion-city" class="text-input" placeholder="Rotterdam" />
         </div>
+
         <div class="form-group">
-          <label for="include-previous-expenses">Include in previous expenses?</label>
-          <select id="include-previous-expenses" class="select-input">
-            <option value="no">No, only future expenses</option>
-            <option value="yes">Yes, include all previous expenses</option>
-          </select>
-          <div class="helper-text">This follows the behaviour shown in your prototype.</div>
+          <label for="suggestion-subtitle">Description</label>
+          <input id="suggestion-subtitle" class="text-input" placeholder="Modern architecture" />
         </div>
+
+        <div class="form-group">
+          <label for="suggestion-cost">Average cost (€)</label>
+          <input id="suggestion-cost" class="number-input" type="number" min="0" placeholder="185" />
+        </div>
+
+        <div class="form-group">
+          <label for="suggestion-image">Photo</label>
+          <input id="suggestion-image" type="file" accept="image/*" />
+        </div>
+
         <div class="btn-row">
-          <button class="secondary-btn" data-close-modal="modal-add-member">Cancel</button>
-          <button class="primary-btn" id="save-member-btn">Add member</button>
+          <button class="secondary-btn" data-close-modal="modal-add-suggestion">Cancel</button>
+          <button class="primary-btn" id="save-suggestion-btn">Save suggestion</button>
         </div>
       </div>
     </div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>

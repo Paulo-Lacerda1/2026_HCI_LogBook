@@ -479,21 +479,31 @@ function renderSuggestions() {
   }
 
   container.innerHTML = `
-    <div class="suggestion-card" id="active-suggestion-card">
-      <div class="suggestion-image">${suggestion.emoji}</div>
-      <div class="suggestion-body">
-        <div class="muted">Suggestion #${index + 1}</div>
-        <h3>${suggestion.city}</h3>
-        <div class="muted">${suggestion.subtitle}</div>
-        <div class="spacer-16"></div>
-        <div class="big-number">Average cost ${formatCurrency(suggestion.avgCost)}</div>
-        <div class="swipe-actions">
-          <button class="skip-btn" onclick="swipeSuggestion('skip')">✕ Skip</button>
-          <button class="like-btn" onclick="swipeSuggestion('like')">♥ Like</button>
-        </div>
+  <div class="suggestion-card" id="active-suggestion-card">
+    <div class="suggestion-image">
+      ${
+        suggestion.image
+          ? `<img src="${suggestion.image}" alt="${suggestion.city}">`
+          : suggestion.emoji || '📍'
+      }
+    </div>
+
+    <div class="suggestion-body">
+      <div class="muted">Suggestion #${index + 1}</div>
+      <h3>${suggestion.city}</h3>
+      <div class="muted">${suggestion.subtitle}</div>
+      <div class="muted">Suggested by ${suggestion.suggestedBy || 'SwipeTravel'}</div>
+
+      <div class="spacer-16"></div>
+      <div class="big-number">Average cost ${formatCurrency(suggestion.avgCost)}</div>
+
+      <div class="swipe-actions">
+        <button class="skip-btn" onclick="swipeSuggestion('skip')">✕ Skip</button>
+        <button class="like-btn" onclick="swipeSuggestion('like')">♥ Like</button>
       </div>
     </div>
-  `;
+  </div>
+`;
 
   // Lógica de Swipe
   const card = $('#active-suggestion-card');
@@ -546,6 +556,15 @@ function renderSuggestions() {
   window.addEventListener('touchmove', onMove);
   window.addEventListener('mouseup', onEnd);
   window.addEventListener('touchend', onEnd);
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
 }
 
 function renderProfile() {
@@ -668,6 +687,44 @@ function saveExpense() {
   render();
 }
 
+async function saveSuggestion() {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+
+  const city = $('#suggestion-city').value.trim();
+  const subtitle = $('#suggestion-subtitle').value.trim();
+  const avgCost = Number($('#suggestion-cost').value || 0);
+  const file = $('#suggestion-image').files[0];
+
+  if (!city || !subtitle || !avgCost || !file) {
+    alert('Fill all fields and select an image.');
+    return;
+  }
+
+  const imageBase64 = await toBase64(file);
+
+  trip.suggestions.push({
+    city,
+    subtitle,
+    avgCost,
+    image: imageBase64,
+    suggestedBy: 'Utilizador',
+    votes: 0
+  });
+
+  // reset
+  $('#suggestion-city').value = '';
+  $('#suggestion-subtitle').value = '';
+  $('#suggestion-cost').value = '';
+  $('#suggestion-image').value = '';
+
+  closeModal('modal-add-suggestion');
+
+  state.suggestionIndexByTrip[trip.id] = trip.suggestions.length - 1;
+
+  renderSuggestions();
+}
+
 function saveMember() {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -718,6 +775,8 @@ safeListen('#expense-split', 'change', (event) => {
 safeListen('#login-submit', 'click', login);
 safeListen('#register-submit', 'click', register);
 safeListen('#logout-btn', 'click', logout);
+safeListen('#open-add-suggestion', 'click', () => openModal('modal-add-suggestion'));
+safeListen('#save-suggestion-btn', 'click', saveSuggestion);
 
 seedDemoAccount();
 loadSession();
