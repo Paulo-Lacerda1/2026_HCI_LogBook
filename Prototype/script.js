@@ -13,79 +13,8 @@ const state = {
   authMode: 'login',
   authenticated: false,
   currentUser: null,
-  trips: [
-    {
-      id: 1,
-      name: 'Summer Holidays',
-      destination: 'Netherlands',
-      city: 'Amsterdam',
-      start: '12 Apr',
-      end: '16 Apr',
-      durationDays: 4,
-      budget: 400,
-      status: 'planning',
-      members: ['Maria', 'Pedro', 'Nuno'],
-      votesCompleted: 3,
-      votesTotal: 4,
-      missingItem: 'Accommodation',
-      approvedActivities: [
-        { name: 'Van Gogh Museum', price: 20 },
-        { name: 'Boat Tour', price: 15 }
-      ],
-      itinerary: [
-        {
-          day: 2,
-          nowNextTitle: 'Now and next',
-          items: [
-            '15:00 - Van Gogh Museum',
-            'Tickets already bought by Joao'
-          ]
-        }
-      ],
-      expenses: [
-        {
-          id: 11,
-          title: 'Supermarket',
-          amount: 60,
-          paidBy: 'Maria',
-          owedBy: 'Nuno',
-          owedAmount: 19.5,
-          pending: true,
-          participants: 3
-        }
-      ],
-      pendingActions: [
-        {
-          title: '3 more swipes needed',
-          description: 'Finish destination voting for Summer Holidays.',
-          cta: 'Go vote'
-        }
-      ],
-      suggestions: [
-        {
-          city: 'Rotterdam',
-          subtitle: 'Modern architecture',
-          avgCost: 185,
-          emoji: '🏙️'
-        },
-        {
-          city: 'Utrecht',
-          subtitle: 'Strong cultural life',
-          avgCost: 230,
-          emoji: '🚲'
-        },
-        {
-          city: 'Amsterdam',
-          subtitle: 'Cultural capital',
-          avgCost: 425,
-          emoji: '🌷'
-        }
-      ],
-      voteResults: {
-        destination: 'Amsterdam',
-        accommodation: 'Airbnb Centro (EUR50/night)'
-      }
-    },
+  trips: readJSON('swipetravel.trips', [
+    // Removemos a 'Summer Holidays' daqui para começar do zero
     {
       id: 2,
       name: 'Barcelona Group',
@@ -104,36 +33,13 @@ const state = {
         { name: 'Sagrada Familia', price: 26 },
         { name: 'Beach afternoon', price: 0 }
       ],
-      itinerary: [
-        {
-          day: 1,
-          nowNextTitle: 'Trip completed',
-          items: [
-            'Final itinerary archived',
-            'All bookings completed'
-          ]
-        }
-      ],
-      expenses: [
-        {
-          id: 21,
-          title: 'Final settlement',
-          amount: 0,
-          paidBy: '-',
-          owedBy: 'Nobody',
-          owedAmount: 0,
-          pending: false,
-          participants: 4
-        }
-      ],
+      itinerary: [{ day: 1, nowNextTitle: 'Trip completed', items: ['Final itinerary archived'] }],
+      expenses: [],
       pendingActions: [],
       suggestions: [],
-      voteResults: {
-        destination: 'Barcelona',
-        accommodation: 'Shared apartment near city centre'
-      }
+      voteResults: { destination: 'Barcelona', accommodation: 'Shared apartment' }
     }
-  ]
+  ])
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -339,7 +245,7 @@ function renderAuth() {
 function renderHome() {
   const currentUserName = state.currentUser?.name || 'Utilizador';
   const homeGreeting = $('#screen-home .brand h1');
-  if (homeGreeting) homeGreeting.textContent = `Ola, ${currentUserName} 👋`;
+  if (homeGreeting) homeGreeting.textContent = `Hello, ${currentUserName} 👋`;
 
   const allPending = state.trips.flatMap((trip) =>
     trip.pendingActions.map((action) => ({ ...action, tripId: trip.id, tripName: trip.name }))
@@ -367,26 +273,32 @@ function renderHome() {
   }
   const homeTripList = $('#home-trip-list');
   if(homeTripList) homeTripList.innerHTML = state.trips.map(renderTripCard).join('');
+  
 }
 
 function renderTripCard(trip) {
   const memberCount = trip.members.length;
   const badgeText = trip.status === 'closed' ? 'Closed' : trip.votesCompleted < trip.votesTotal ? 'Planning' : 'Ongoing';
   const badgeClass = trip.status === 'closed' ? 'closed' : trip.votesCompleted < trip.votesTotal ? 'planning' : 'progress';
-  const statusLine = trip.status === 'closed' ? 'Accounts settled and trip finished' : trip.missingItem ? `Missing ${trip.missingItem}` : 'Trip ready';
+  const statusLine = trip.status === 'closed' ? 'Accounts settled' : trip.missingItem ? `Missing ${trip.missingItem}` : 'Trip ready';
 
   return `
     <div class="trip-card" onclick="openTrip(${trip.id})">
-      <div class="trip-card-header">
-        <div>
-          <h4 class="trip-title">${trip.name}</h4>
-          <div class="trip-meta">${trip.start} to ${trip.end} • ${memberCount} member${memberCount === 1 ? '' : 's'}</div>
+      <div class="trip-card-content">
+        <div class="trip-info-side">
+          <h4 class="trip-title">
+            ${trip.name} <span class="status-arrow">→</span> <span class="status-text ${badgeClass}">${badgeText}</span>
+          </h4>
+          <div class="trip-meta">${trip.start} to ${trip.end} • ${memberCount} members</div>
+          <div class="muted" style="margin-top: 8px; font-size: 0.85rem;">${statusLine}</div>
         </div>
-        <span class="badge ${badgeClass}">${badgeText}</span>
-      </div>
-      <div class="trip-footer">
-        <div class="muted">${statusLine}</div>
-        <div class="muted">${trip.votesCompleted}/${trip.votesTotal} votes</div>
+
+        <div class="trip-actions-side">
+          <button class="delete-btn-elegant" onclick="deleteTrip(event, ${trip.id})">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+          <span class="votes-badge">${trip.votesCompleted}/${trip.votesTotal} votes</span>
+        </div>
       </div>
     </div>
   `;
@@ -456,6 +368,8 @@ function renderTripDetail() {
     `).join('') : '<div class="empty-state">No expenses yet.</div>';
   }
 
+  
+
   $$('[data-detail-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.detailTab === state.detailTab));
   if($('#trip-tab-votes')) $('#trip-tab-votes').classList.toggle('hidden', state.detailTab !== 'votes');
   if($('#trip-tab-itinerary')) $('#trip-tab-itinerary').classList.toggle('hidden', state.detailTab !== 'itinerary');
@@ -465,16 +379,26 @@ function renderTripDetail() {
 function renderSuggestions() {
   const trip = getCurrentTrip();
   if (!trip) return;
+  
   if($('#suggestions-title')) $('#suggestions-title').textContent = `${trip.name} suggestions`;
-  if (state.suggestionIndexByTrip[trip.id] === undefined) state.suggestionIndexByTrip[trip.id] = 0;
-
-  const index = state.suggestionIndexByTrip[trip.id];
+  
+  // LER DO OBJETO DA TRIP
+  if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
+  const index = trip.currentSuggestionIndex;
+  
   const suggestion = trip.suggestions[index];
   const container = $('#suggestion-deck');
   if (!container) return;
 
   if (!suggestion) {
-    container.innerHTML = `<div class="empty-state"><strong>All suggestions reviewed</strong><div class="spacer-8"></div><div>You already swiped through every destination suggestion.</div></div>`;
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>📍 All suggestions reviewed</strong>
+        <div class="spacer-8"></div>
+        <div>The destination <b>${trip.voteResults.destination}</b> was selected.</div>
+        <div class="spacer-16"></div>
+        <button class="primary-btn" onclick="setScreen('trip-detail')">Back to Trip</button>
+      </div>`;
     return;
   }
 
@@ -619,6 +543,7 @@ function markExpensePaid(tripId, expenseId) {
   const trip = state.trips.find((item) => item.id === tripId);
   const expense = trip?.expenses.find((item) => item.id === expenseId);
   if (expense) { expense.pending = false; expense.owedAmount = 0; }
+  saveTripsToStorage();
   render();
 }
 
@@ -626,64 +551,146 @@ function removeMember(memberName) {
   const trip = getCurrentTrip();
   if (!trip) return;
   trip.members = trip.members.filter((member) => member !== memberName);
+  saveTripsToStorage();
   render();
 }
 
 function swipeSuggestion(type) {
   const trip = getCurrentTrip();
   if (!trip) return;
-  const index = state.suggestionIndexByTrip[trip.id] || 0;
+  
+  if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
+  const index = trip.currentSuggestionIndex;
+  
   const suggestion = trip.suggestions[index];
   if (!suggestion) return;
-  if (type === 'like') {
-    trip.voteResults.destination = suggestion.city;
-    trip.votesCompleted = Math.min(trip.votesTotal, trip.votesCompleted + 1);
-  }
-  state.suggestionIndexByTrip[trip.id] = index + 1;
-  renderSuggestions();
-  renderTripDetail();
-  renderHome();
-  renderTrips();
-}
 
+  if (type === 'like') {
+    // 1. Registamos o destino mas NÃO saltamos logo para o fim do índice
+    trip.voteResults.destination = suggestion.city;
+    
+    // 2. Atualizamos os votos para o total (simulando que o teu voto fechou a contagem)
+    trip.votesCompleted = trip.votesTotal; 
+    
+    // 3. Limpamos as ações pendentes e o item em falta
+    trip.pendingActions = trip.pendingActions.filter(a => !a.description.includes('voto'));
+    trip.missingItem = trip.missingItem === 'Destination' ? '' : trip.missingItem;
+    
+    // NOTA: Removi a linha que forçava o índice para o fim. 
+    // Assim, o swipe continua para a próxima carta.
+  }
+
+  // Avança apenas uma carta de cada vez, seja Like ou Skip
+  trip.currentSuggestionIndex = index + 1;
+  
+  saveTripsToStorage(); 
+  render(); 
+}
 function createTrip() {
-  const name = $('#trip-name')?.value.trim();
-  const destination = $('#trip-destination')?.value.trim();
-  const budget = Number($('#trip-budget')?.value || 0);
-  const membersRaw = $('#trip-members')?.value.trim();
-  const members = membersRaw ? membersRaw.split(',').map((item) => item.trim()).filter(Boolean) : [state.currentUser?.name || 'Maria'];
-  if (!name || !destination) { alert('Please fill in at least the trip name and destination.'); return; }
+  const nameInput = $('#trip-name');
+  const destinationInput = $('#trip-destination');
+  const budgetInput = $('#trip-budget');
+  const membersInput = $('#trip-members');
+
+  const name = nameInput?.value.trim();
+  const destination = destinationInput?.value.trim();
+  const budget = Number(budgetInput?.value || 0);
+  const membersRaw = membersInput?.value.trim();
+  
+  // 1. LÓGICA DE MEMBROS CORRIGIDA:
+  let members = [];
+  if (membersRaw) {
+    // Se escreveste nomes, adicionamos "Tu" à lista para garantir que és um dos membros
+    members = ['Tu', ...membersRaw.split(',').map((item) => item.trim()).filter(Boolean)];
+  } else {
+    // Se deixaste vazio, usa o grupo padrão
+    members = ['Tu', 'Tomas', 'Sofia', 'Nuno'];
+  }
+
+  if (!name || !destination) { 
+    alert('Por favor, preenche o nome e destino.'); 
+    return; 
+  }
+
+  // 2. CÁLCULO DE VOTOS:
+  // Se membros são ['Tu', 'Maria'], vTotal é 2.
+  // vCompleted será 2 - 1 = 1. Resultado: 1/2 votos.
+  const vTotal = members.length; 
+  const vCompleted = Math.max(0, vTotal - 1); 
 
   const newTrip = {
-    id: Date.now(), name, destination, city: destination, start: 'TBD', end: 'TBD', durationDays: state.createTripDuration, budget, status: 'planning', members, votesCompleted: 0, votesTotal: 3, missingItem: 'Destination, accommodation and activities', approvedActivities: [], itinerary: [{ day: 1, nowNextTitle: 'Now and next', items: ['Trip created successfully', 'Start adding votes, members and expenses'] }], expenses: [], pendingActions: [{ title: 'Start planning', description: `Complete the first votes for ${name}.`, cta: 'Open trip' }], suggestions: [{ city: destination, subtitle: 'Suggested destination', avgCost: budget || 200, emoji: '🧳' }], voteResults: { destination, accommodation: 'Not chosen yet' }
+    id: Date.now(),
+    name: name,
+    destination: destination,
+    city: 'TBD', 
+    start: '12 Ago',
+    end: '16 Ago',
+    durationDays: state.createTripDuration,
+    budget: budget,
+    status: 'planning',
+    members: members,
+    votesCompleted: vCompleted, 
+    votesTotal: vTotal,         
+    currentSuggestionIndex: 0,
+    missingItem: 'Destination',
+    approvedActivities: [],
+    itinerary: [{ 
+      day: 1, 
+      nowNextTitle: 'Planeamento', 
+      items: ['Viagem criada. Aguardando o teu voto final.'] 
+    }],
+    expenses: [],
+    pendingActions: [{ 
+      title: 'Votação em curso', 
+      description: `Falta o teu voto para decidir o destino de ${name}.`, 
+      cta: 'Ir votar agora' 
+    }],
+    suggestions: [
+      { city: 'Amesterdao', subtitle: 'Capital da Holanda', avgCost: 425, emoji: '🌷' },
+      { city: 'Roterdão', subtitle: 'Arquitetura Moderna', avgCost: 185, emoji: '🏗️' },
+      { city: 'Utrecht', subtitle: 'Canais e Bicicletas', avgCost: 230, emoji: '🚲' }
+    ],
+    voteResults: { destination: 'TBD', accommodation: 'TBD' }
   };
-  state.trips.unshift(newTrip);
-  state.currentTripId = newTrip.id;
-  closeModal('modal-create-trip');
-  if($('#trip-name')) $('#trip-name').value = '';
-  if($('#trip-destination')) $('#trip-destination').value = '';
-  if($('#trip-budget')) $('#trip-budget').value = '';
-  if($('#trip-members')) $('#trip-members').value = '';
-  state.createTripDuration = 4;
-  setScreen('trip-detail');
-}
 
+  state.trips.unshift(newTrip);
+  saveTripsToStorage();
+  state.currentTripId = newTrip.id;
+  
+  closeModal('modal-create-trip');
+  if(nameInput) nameInput.value = '';
+  if(destinationInput) destinationInput.value = '';
+  if(budgetInput) budgetInput.value = '';
+  if(membersInput) membersInput.value = '';
+  
+  render();
+  setScreen('home');
+}
 function saveExpense() {
   const trip = getCurrentTrip();
   if (!trip) return;
   const description = $('#expense-description')?.value.trim();
   const total = Number($('#expense-total')?.value || 0);
   const payer = $('#expense-payer')?.value;
-  const splitMode = $('#expense-split')?.value;
-  const participants = splitMode === 'custom' ? Number($('#expense-custom-count')?.value || 1) : trip.members.length;
-  if (!description || !total || !payer) { alert('Please fill in the expense fields.'); return; }
-  const others = trip.members.filter((member) => member !== payer);
-  const owedBy = others[0] || payer;
-  const owedAmount = participants > 0 ? total / participants : total;
-  trip.expenses.unshift({ id: Date.now(), title: description, amount: total, paidBy: payer, owedBy, owedAmount, pending: true, participants });
-  if($('#expense-description')) $('#expense-description').value = '';
-  if($('#expense-total')) $('#expense-total').value = '';
+  
+  if (!description || !total) return;
+
+  const participantsCount = trip.members.length;
+  const owedPerPerson = total / participantsCount;
+
+  trip.expenses.unshift({
+    id: Date.now(),
+    title: description,
+    amount: total,
+    paidBy: payer,
+    owedBy: 'O grupo', // Indica que todos devem
+    owedAmount: total - owedPerPerson, // O que o pagador tem a receber do resto
+    pending: true,
+    participants: participantsCount
+  });
+
   closeModal('modal-add-expense');
+  saveTripsToStorage();
   render();
 }
 
@@ -725,6 +732,18 @@ async function saveSuggestion() {
   renderSuggestions();
 }
 
+function deleteTrip(event, id) {
+  // Impede que ao clicar no lixo o navegador abra os detalhes da viagem
+  event.stopPropagation();
+
+  if (confirm('Tens a certeza que queres eliminar esta viagem?')) {
+    state.trips = state.trips.filter(trip => trip.id !== id);
+    
+    saveTripsToStorage(); // Atualiza o LocalStorage para não voltar após RR
+    render();             // Atualiza a interface
+  }
+}
+
 function saveMember() {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -740,6 +759,11 @@ function saveMember() {
   closeModal('modal-add-member');
   render();
   alert(includePrevious ? `${name} added and included in previous expenses.` : `${name} added successfully.`);
+}
+
+
+function saveTripsToStorage() {
+  writeJSON('swipetravel.trips', state.trips);
 }
 
 document.addEventListener('click', (event) => {
@@ -788,3 +812,4 @@ window.openTripFromAction = openTripFromAction;
 window.markExpensePaid = markExpensePaid;
 window.removeMember = removeMember;
 window.swipeSuggestion = swipeSuggestion;
+window.deleteTrip = deleteTrip;
