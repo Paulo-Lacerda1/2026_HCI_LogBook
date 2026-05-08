@@ -355,18 +355,26 @@ function renderTripDetail() {
   }
 
   const expList = $('#expense-list');
-  if(expList) {
-    expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
-      <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
-        <div class="row-between">
-          <div><strong>${expense.title}</strong><div class="expense-note">Paid by ${expense.paidBy}</div></div>
-          <div class="expense-amount">${formatCurrency(expense.amount)}</div>
+if (expList) {
+  expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
+    <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
+      <div class="row-between">
+        <div>
+          <strong>${expense.title}</strong>
+          <div class="expense-note">Split between ${expense.participants} people</div>
         </div>
-        <div class="spacer-8"></div>
-        ${expense.pending ? `<div class="muted">${expense.owedBy} owes ${formatCurrency(expense.owedAmount)}</div><div class="spacer-8"></div><button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as paid</button>` : '<div class="muted">Settled ✅</div>'}
+        <div class="expense-amount">€${Number(expense.amount).toFixed(2)}</div>
       </div>
-    `).join('') : '<div class="empty-state">No expenses yet.</div>';
-  }
+      <div class="spacer-8"></div>
+      <div class="muted">Each person owes <strong>€${Number(expense.owedPerPerson).toFixed(2)}</strong></div>
+      <div class="spacer-8"></div>
+      ${expense.pending
+        ? `<button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as settled ✅</button>`
+        : '<div class="muted">Settled ✅</div>'
+      }
+    </div>
+  `).join('') : '<div class="empty-state">No expenses yet.</div>';
+}
 
   
 
@@ -669,25 +677,35 @@ function createTrip() {
 function saveExpense() {
   const trip = getCurrentTrip();
   if (!trip) return;
+  
   const description = $('#expense-description')?.value.trim();
   const total = Number($('#expense-total')?.value || 0);
-  const payer = $('#expense-payer')?.value;
-  
-  if (!description || !total) return;
+  const splitType = $('#expense-split')?.value;
 
-  const participantsCount = trip.members.length;
+  if (!description || !total) {
+    alert('Please fill in description and amount.');
+    return;
+  }
+
+  const participantsCount = splitType === 'custom'
+    ? Number($('#expense-custom-count')?.value || trip.members.length)
+    : trip.members.length;
+
   const owedPerPerson = total / participantsCount;
 
   trip.expenses.unshift({
     id: Date.now(),
     title: description,
     amount: total,
-    paidBy: payer,
-    owedBy: 'O grupo', // Indica que todos devem
-    owedAmount: total - owedPerPerson, // O que o pagador tem a receber do resto
-    pending: true,
-    participants: participantsCount
+    paidBy: 'Group',
+    owedPerPerson: owedPerPerson,
+    participants: participantsCount,
+    pending: true
   });
+
+  if ($('#expense-description')) $('#expense-description').value = '';
+  if ($('#expense-total')) $('#expense-total').value = '';
+  if ($('#expense-split')) $('#expense-split').value = 'all';
 
   closeModal('modal-add-expense');
   saveTripsToStorage();
