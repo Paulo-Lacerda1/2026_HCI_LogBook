@@ -14,7 +14,7 @@ const state = {
   authenticated: false,
   currentUser: null,
   trips: readJSON('swipetravel.trips', [
-    // Removemos a 'Summer Holidays' daqui para começar do zero
+    // Removed 'Summer Holidays' from here to start from scratch
     {
       id: 2,
       name: 'Barcelona Group',
@@ -157,12 +157,12 @@ function login() {
   const email = emailInput.value.trim().toLowerCase();
   const password = passInput.value;
   if (!email || !password) {
-    showAuthFeedback('Preenche o email e a palavra-passe.');
+    showAuthFeedback('Fill in the email and password.');
     return;
   }
   const account = getAccounts().find((item) => item.email.toLowerCase() === email && item.password === password);
   if (!account) {
-    showAuthFeedback('Conta nao encontrada. Podes criar uma conta nova no separador de registo.');
+    showAuthFeedback('Account not found. You can create a new account in the registration tab.');
     return;
   }
   completeLogin(account);
@@ -175,23 +175,23 @@ function register() {
   const confirmPassword = $('#register-confirm-password')?.value;
   const accounts = getAccounts();
   if (!name || !email || !password || !confirmPassword) {
-    showAuthFeedback('Preenche todos os campos para criar a conta.');
+    showAuthFeedback('Fill in all fields to create the account.');
     return;
   }
   if (!email.includes('@')) {
-    showAuthFeedback('Introduz um email valido.');
+    showAuthFeedback('Enter a valid email.');
     return;
   }
   if (password.length < 6) {
-    showAuthFeedback('A palavra-passe deve ter pelo menos 6 caracteres.');
+    showAuthFeedback('The password must be at least 6 characters long.');
     return;
   }
   if (password !== confirmPassword) {
-    showAuthFeedback('As palavras-passe nao coincidem.');
+    showAuthFeedback('Passwords do not match.');
     return;
   }
   if (accounts.some((account) => account.email.toLowerCase() === email)) {
-    showAuthFeedback('Ja existe uma conta com esse email.');
+    showAuthFeedback('An account with this email already exists.');
     return;
   }
   const newAccount = { name, email, password };
@@ -200,7 +200,7 @@ function register() {
   if($('#login-email')) $('#login-email').value = email;
   if($('#login-password')) $('#login-password').value = password;
   setAuthMode('login');
-  showAuthFeedback('Conta criada com sucesso. Agora so falta entrar.', 'success');
+  showAuthFeedback('Account created successfully. Now just sign in.', 'success');
 }
 
 function logout() {
@@ -243,7 +243,7 @@ function renderAuth() {
 }
 
 function renderHome() {
-  const currentUserName = state.currentUser?.name || 'Utilizador';
+  const currentUserName = state.currentUser?.name || 'User';
   const homeGreeting = $('#screen-home .brand h1');
   if (homeGreeting) homeGreeting.textContent = `Hello, ${currentUserName} 👋`;
 
@@ -390,7 +390,7 @@ function renderSuggestions() {
   
   if($('#suggestions-title')) $('#suggestions-title').textContent = `${trip.name} suggestions`;
   
-  // LER DO OBJETO DA TRIP
+  // Read from the trip object
   if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
   const index = trip.currentSuggestionIndex;
   
@@ -437,7 +437,7 @@ function renderSuggestions() {
   </div>
 `;
 
-  // Lógica de Swipe
+  // Swipe logic
   const card = $('#active-suggestion-card');
   let startX = 0;
   let currentX = 0;
@@ -455,7 +455,7 @@ function renderSuggestions() {
     const diff = currentX - startX;
     card.style.transform = `translateX(${diff}px) rotate(${diff / 15}deg)`;
     
-    // Feedback visual de cor (opcional)
+    // Optional visual color feedback
     if (diff > 50) card.style.background = '#ecfdf3'; // Like
     else if (diff < -50) card.style.background = '#fff0f0'; // Skip
     else card.style.background = 'white';
@@ -574,21 +574,21 @@ function swipeSuggestion(type) {
   if (!suggestion) return;
 
   if (type === 'like') {
-    // 1. Registamos o destino mas NÃO saltamos logo para o fim do índice
+    // 1. Register the destination but do NOT jump straight to the end of the index
     trip.voteResults.destination = suggestion.city;
     
-    // 2. Atualizamos os votos para o total (simulando que o teu voto fechou a contagem)
+    // 2. Update votes to the total (simulating that your vote closed the count)
     trip.votesCompleted = trip.votesTotal; 
     
-    // 3. Limpamos as ações pendentes e o item em falta
+    // 3. Clear pending actions and the missing item
     trip.pendingActions = trip.pendingActions.filter(a => !a.description.includes('voto'));
     trip.missingItem = trip.missingItem === 'Destination' ? '' : trip.missingItem;
     
-    // NOTA: Removi a linha que forçava o índice para o fim. 
-    // Assim, o swipe continua para a próxima carta.
+    // NOTE: Removed the line that forced the index to the end.
+    // This way, swipe continues to the next card.
   }
 
-  // Avança apenas uma carta de cada vez, seja Like ou Skip
+  // Advance only one card at a time, whether Like or Skip
   trip.currentSuggestionIndex = index + 1;
   
   saveTripsToStorage(); 
@@ -605,13 +605,13 @@ function createTrip() {
   const budget = Number(budgetInput?.value || 0);
   const membersRaw = membersInput?.value.trim();
   
-  // 1. LÓGICA DE MEMBROS CORRIGIDA:
+  // 1. Corrected member logic:
   let members = [];
   if (membersRaw) {
-    // Se escreveste nomes, adicionamos "Tu" à lista para garantir que és um dos membros
+    // If you entered names, add "Tu" to the list to ensure you are one of the members
     members = ['Tu', ...membersRaw.split(',').map((item) => item.trim()).filter(Boolean)];
   } else {
-    // Se deixaste vazio, usa o grupo padrão
+    // If left empty, use the default group
     members = ['Tu', 'Tomas', 'Sofia', 'Nuno'];
   }
 
@@ -620,9 +620,9 @@ function createTrip() {
     return; 
   }
 
-  // 2. CÁLCULO DE VOTOS:
-  // Se membros são ['Tu', 'Maria'], vTotal é 2.
-  // vCompleted será 2 - 1 = 1. Resultado: 1/2 votos.
+  // 2. Vote calculation:
+  // If members are ['Tu', 'Maria'], vTotal is 2.
+  // vCompleted will be 2 - 1 = 1. Result: 1/2 votes.
   const vTotal = members.length; 
   const vCompleted = Math.max(0, vTotal - 1); 
 
@@ -644,14 +644,14 @@ function createTrip() {
     approvedActivities: [],
     itinerary: [{ 
       day: 1, 
-      nowNextTitle: 'Planeamento', 
-      items: ['Viagem criada. Aguardando o teu voto final.'] 
+      nowNextTitle: 'Planning', 
+      items: ['Trip created. Waiting for your final vote.'] 
     }],
     expenses: [],
     pendingActions: [{ 
-      title: 'Votação em curso', 
-      description: `Falta o teu voto para decidir o destino de ${name}.`, 
-      cta: 'Ir votar agora' 
+      title: 'Voting in progress', 
+      description: `Your vote is needed to decide the destination of ${name}.`, 
+      cta: 'Go vote now' 
     }],
     suggestions: [
       { city: 'Amesterdao', subtitle: 'Capital da Holanda', avgCost: 425, emoji: '🌷' },
@@ -737,7 +737,7 @@ async function saveSuggestion() {
     votes: 0
   });
 
-  // reset
+  // Reset
   $('#suggestion-city').value = '';
   $('#suggestion-subtitle').value = '';
   $('#suggestion-cost').value = '';
@@ -751,14 +751,14 @@ async function saveSuggestion() {
 }
 
 function deleteTrip(event, id) {
-  // Impede que ao clicar no lixo o navegador abra os detalhes da viagem
+  // Prevents the browser from opening trip details when clicking the trash icon
   event.stopPropagation();
 
-  if (confirm('Tens a certeza que queres eliminar esta viagem?')) {
+  if (confirm('Are you sure you want to delete this trip?')) {
     state.trips = state.trips.filter(trip => trip.id !== id);
     
-    saveTripsToStorage(); // Atualiza o LocalStorage para não voltar após RR
-    render();             // Atualiza a interface
+    saveTripsToStorage(); // Update local storage to persist changes
+    render();             // Update the interface
   }
 }
 
