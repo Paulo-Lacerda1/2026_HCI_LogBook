@@ -30,7 +30,7 @@ const state = {
       votesTotal: 6,
       missingItem: '',
       approvedActivities: [
-        { name: 'Sagrada Familia', price: 26 },
+        { name: 'La Sagrada Familia', price: 26 },
         { name: 'Beach afternoon', price: 0 }
       ],
       itinerary: [{ day: 1, nowNextTitle: 'Trip completed', items: ['Final itinerary archived'] }],
@@ -411,27 +411,30 @@ function renderSuggestions() {
   }
 
   container.innerHTML = `
-  <div class="suggestion-card" id="active-suggestion-card">
+  <div class="suggestion-card" id="active-suggestion-card" style="position: relative;">
+    <div class="swipe-stamp stamp-like" id="stamp-like">LIKE</div>
+    <div class="swipe-stamp stamp-skip" id="stamp-skip">SKIP</div>
+    
     <div class="suggestion-image">
-      ${
-        suggestion.image
-          ? `<img src="${suggestion.image}" alt="${suggestion.city}">`
-          : suggestion.emoji || '📍'
-      }
+      <img src="${suggestion.image}" alt="${suggestion.city}">
+      <div class="rating-badge">⭐ ${suggestion.rating}</div>
     </div>
 
     <div class="suggestion-body">
-      <div class="muted">Suggestion #${index + 1}</div>
+      <div class="tag-row">
+        ${suggestion.tags.map(tag => `<span class="tag-chip">${tag}</span>`).join('')}
+      </div>
       <h3>${suggestion.city}</h3>
-      <div class="muted">${suggestion.subtitle}</div>
-      <div class="muted">Suggested by ${suggestion.suggestedBy || 'SwipeTravel'}</div>
+      <p class="muted">${suggestion.subtitle}</p>
 
       <div class="spacer-16"></div>
-      <div class="big-number">Average cost ${formatCurrency(suggestion.avgCost)}</div>
-
-      <div class="swipe-actions">
-        <button class="skip-btn" onclick="swipeSuggestion('skip')">✕ Skip</button>
-        <button class="like-btn" onclick="swipeSuggestion('like')">♥ Like</button>
+      <div class="price-row">
+        <span class="muted">Average cost</span>
+        <div class="big-number">${formatCurrency(suggestion.avgCost)}</div>
+      </div>
+      
+      <div class="swipe-hint">
+        &larr; Swipe Left to Skip | Swipe Right to Like &rarr;
       </div>
     </div>
   </div>
@@ -517,9 +520,20 @@ function renderProfile() {
 function renderExpensePayerOptions() {
   const trip = getCurrentTrip();
   if (!trip) return;
+  
   const select = $('#expense-payer');
   if(select) select.innerHTML = trip.members.map((member) => `<option value="${member}">${member}</option>`).join('');
-  if($('#expense-custom-count')) $('#expense-custom-count').value = trip.members.length;
+  
+  // Nova lógica: Cria uma checkbox por cada membro da viagem
+  const membersContainer = $('#expense-custom-members');
+  if (membersContainer) {
+    membersContainer.innerHTML = trip.members.map(member => `
+      <label class="checkbox-item">
+        <input type="checkbox" value="${member}" checked>
+        ${member}
+      </label>
+    `).join('');
+  }
 }
 
 function renderChrome() {
@@ -574,26 +588,39 @@ function swipeSuggestion(type) {
   if (!suggestion) return;
 
   if (type === 'like') {
-    // 1. Register the destination but do NOT jump straight to the end of the index
+      // 1. Record the winning destination based on the card
     trip.voteResults.destination = suggestion.city;
-    
-    // 2. Update votes to the total (simulating that your vote closed the count)
     trip.votesCompleted = trip.votesTotal; 
     
-    // 3. Clear pending actions and the missing item
+      // 2. Fill in the accommodation and activities here (the prototype's Wizard of Oz)
+    trip.voteResults.accommodation = 'Airbnb in De Pijp (Room for 4)';
+    trip.approvedActivities = [
+      { name: '🚤 Canal Boat Trip', price: 15 },
+      { name: '🚲 Bicycle Hire (Full Day)', price: 12 },
+      { name: '🎨 Van Gogh Museum', price: 22 }
+    ];
+
+      // 3. Update the itinerary to remove the "Waiting for vote" message
+    trip.itinerary = [{
+      day: 1,
+      nowNextTitle: 'Destination chosen!',
+      items: [
+        `✅ Destination confirmed: ${suggestion.city}`,
+        `Next step: Vote on accommodation and activities.`
+      ]
+    }];
+
+      // 4. Clear pending actions
     trip.pendingActions = trip.pendingActions.filter(a => !a.description.includes('voto'));
-    trip.missingItem = trip.missingItem === 'Destination' ? '' : trip.missingItem;
-    
-    // NOTE: Removed the line that forced the index to the end.
-    // This way, swipe continues to the next card.
+    trip.missingItem = '';
   }
 
-  // Advance only one card at a time, whether Like or Skip
   trip.currentSuggestionIndex = index + 1;
   
   saveTripsToStorage(); 
   render(); 
 }
+
 function createTrip() {
   const nameInput = $('#trip-name');
   const destinationInput = $('#trip-destination');
@@ -608,11 +635,11 @@ function createTrip() {
   // 1. Corrected member logic:
   let members = [];
   if (membersRaw) {
-    // If you entered names, add "Tu" to the list to ensure you are one of the members
-    members = ['Tu', ...membersRaw.split(',').map((item) => item.trim()).filter(Boolean)];
+    // If you entered names, add "You" to the list to ensure you are one of the members
+    members = ['You', ...membersRaw.split(',').map((item) => item.trim()).filter(Boolean)];
   } else {
     // If left empty, use the default group
-    members = ['Tu', 'Tomas', 'Sofia', 'Nuno'];
+    members = ['You', 'Tomas', 'Sofia', 'Nuno'];
   }
 
   if (!name || !destination) { 
@@ -621,7 +648,7 @@ function createTrip() {
   }
 
   // 2. Vote calculation:
-  // If members are ['Tu', 'Maria'], vTotal is 2.
+  // If members are ['You', 'Maria'], vTotal is 2.
   // vCompleted will be 2 - 1 = 1. Result: 1/2 votes.
   const vTotal = members.length; 
   const vCompleted = Math.max(0, vTotal - 1); 
@@ -641,7 +668,7 @@ function createTrip() {
     votesTotal: vTotal,         
     currentSuggestionIndex: 0,
     missingItem: 'Destination',
-    approvedActivities: [],
+    approvedActivities: [], // <--- Fica vazio no início
     itinerary: [{ 
       day: 1, 
       nowNextTitle: 'Planning', 
@@ -654,12 +681,38 @@ function createTrip() {
       cta: 'Go vote now' 
     }],
     suggestions: [
-      { city: 'Amesterdao', subtitle: 'Capital da Holanda', avgCost: 425, emoji: '🌷' },
-      { city: 'Roterdão', subtitle: 'Arquitetura Moderna', avgCost: 185, emoji: '🏗️' },
-      { city: 'Utrecht', subtitle: 'Canais e Bicicletas', avgCost: 230, emoji: '🚲' }
-    ],
+    { 
+      city: 'Amsterdam', 
+      subtitle: 'Iconic canals and lively atmosphere', 
+      avgCost: 425, 
+      emoji: '🌷',
+      image: 'amsterdao.jpg',
+      rating: 4.8,
+      tags: ['Culture', 'Nightlife']
+    },
+    { 
+      city: 'Rotterdam', 
+      subtitle: 'Futuristic architecture and historic port', 
+      avgCost: 185, 
+      emoji: '🏗️',
+      // Updated link and corrected Unsplash parameters
+      image: 'roterdao.jpg',
+      rating: 4.5,
+      tags: ['Design', 'Modern']
+    },
+    { 
+      city: 'Utrecht', 
+      subtitle: 'Charming canals and a university vibe', 
+      avgCost: 230, 
+      emoji: '🚲',
+      image: 'utrecht.jpg',
+      rating: 4.6,
+      tags: ['History', 'Relax']
+    }
+  ],
     voteResults: { destination: 'TBD', accommodation: 'TBD' }
-  };
+  }
+  ;
 
   state.trips.unshift(newTrip);
   saveTripsToStorage();
@@ -674,6 +727,7 @@ function createTrip() {
   render();
   setScreen('home');
 }
+
 function saveExpense() {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -681,15 +735,26 @@ function saveExpense() {
   const description = $('#expense-description')?.value.trim();
   const total = Number($('#expense-total')?.value || 0);
   const splitType = $('#expense-split')?.value;
+  const payer = $('#expense-payer')?.value || 'Eu';
 
   if (!description || !total) {
     alert('Please fill in description and amount.');
     return;
   }
 
-  const participantsCount = splitType === 'custom'
-    ? Number($('#expense-custom-count')?.value || trip.members.length)
-    : trip.members.length;
+  // Conta os participantes consoante o tipo de divisão
+  let participantsCount = trip.members.length;
+
+  if (splitType === 'custom') {
+    // Procura todas as checkboxes que estão marcadas com 'checked'
+    const checkedBoxes = $$('#expense-custom-members input[type="checkbox"]:checked');
+    participantsCount = checkedBoxes.length;
+
+    if (participantsCount === 0) {
+      alert('Selecione pelo menos um participante para dividir a despesa.');
+      return;
+    }
+  }
 
   const owedPerPerson = total / participantsCount;
 
@@ -697,18 +762,20 @@ function saveExpense() {
     id: Date.now(),
     title: description,
     amount: total,
-    paidBy: 'Group',
+    paidBy: payer,
     owedPerPerson: owedPerPerson,
     participants: participantsCount,
     pending: true
   });
 
+  // Limpa o formulário
   if ($('#expense-description')) $('#expense-description').value = '';
   if ($('#expense-total')) $('#expense-total').value = '';
   if ($('#expense-split')) $('#expense-split').value = 'all';
 
   closeModal('modal-add-expense');
   saveTripsToStorage();
+  alert(`Despesa de ${total}€ no ${description} registada e dividida por ${participantsCount}!`);
   render();
 }
 
