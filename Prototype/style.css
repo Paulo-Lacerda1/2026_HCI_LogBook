@@ -170,33 +170,56 @@ select:focus {
   font-size: 1.25rem;
 }
 
+/* Atualiza o container principal do cabeçalho */
 .brand {
-    background: transparent; /* Garante que não há fundo branco */
+    background: transparent;
     border: none;
     box-shadow: none;
-    padding: 30px 20px 10px 20px; /* Mais espaço no topo para respirar */
-    display: block;
+    padding: 16px 0 8px 0; /* Margens muito mais limpas */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Espaço perfeito entre a saudação e o logo */
 }
 
+/* Deixa o texto do Hello mais harmonioso */
 .brand h1 {
-    font-size: 1.6rem;
+    font-size: 1.65rem;
     font-weight: 800;
-    color: #0f172a; /* Cor de texto bem escura e moderna */
-    letter-spacing: -0.025em;
+    color: #1e293b; /* Um tom ligeiramente mais suave de escuro */
+    letter-spacing: -0.02em;
     margin: 0;
+    line-height: 1.1;
 }
 
+/* Transforma a secção do logotipo numa "pílula" moderna */
 .brand-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef2ff; /* Fundo azul muito suave */
+    padding: 5px 12px 5px 6px; /* Espaçamento interior arredondado */
+    border-radius: 20px;
+    width: fit-content;
 }
 
+/* Destaca o ícone do avião com um fundo branco circular */
 .brand-logo {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    display: block;
+    background: white !important;
+    border-radius: 50%;
+    padding: 3px;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15); /* Sombra elegante */
+}
+
+/* Muda a cor do texto "SwipeTravel" de cinzento para azul da marca */
+.brand-mark .subtitle {
+    color: #4f46e5;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin: 0;
 }
 
 .promo-grid { display: grid; gap: 20px; }
@@ -341,12 +364,11 @@ select:focus {
 }
 
 .hero-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #3662ff;
+  display: flex;            
+  align-items: center;      
+  gap: 10px;               
   margin-bottom: 10px;
+  text-transform: uppercase; 
 }
 
 .hero-topic-row {
@@ -1151,7 +1173,7 @@ select:focus {
 .hero-card p {
   position: relative;
   z-index: 2;
-  max-width: 200px;
+  max-width: 100%;
 }
 
 .hero-footer {
@@ -1167,4 +1189,118 @@ select:focus {
   z-index: 2;
   letter-spacing: -0.01em;
   display: inline-block;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: #fbfdff;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checkbox-item:hover {
+    background: var(--surface-2);
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 22px;
+    
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* Badge de Rating sobre a imagem */
+.rating-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: #1e293b;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Etiquetas (Tags) */
+.tag-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tag-chip {
+    background: #f0f4ff;
+    color: #3662ff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+}
+
+/* Linha de preço mais limpa */
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+/* Texto de ajuda do Swipe */
+.swipe-hint {
+    text-align: center;
+    margin-top: 18px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border: 1px dashed #e2e8f0;
+}
+
+/* --- CARIMBOS DE SWIPE (LIKE / SKIP) --- */
+.swipe-stamp {
+  position: absolute;
+  top: 20px;
+  padding: 5px 15px;
+  border: 4px solid;
+  border-radius: 10px;
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  opacity: 0; /* Começam invisíveis! Só aparecem ao arrastar */
+  z-index: 10;
+  pointer-events: none; /* Para não bloquear o clique do rato */
+}
+
+.stamp-like {
+  right: 20px;
+  color: #10b981;
+  border-color: #10b981;
+  transform: rotate(15deg);
+}
+
+.stamp-skip {
+  left: 20px;
+  color: #ef4444;
+  border-color: #ef4444;
+  transform: rotate(-15deg);
 }
