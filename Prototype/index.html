@@ -184,6 +184,7 @@
       <div class="tab-row">
         <button class="chip active" data-detail-tab="votes">Votes</button>
         <button class="chip" data-detail-tab="itinerary">Itinerary</button>
+        <button class="chip" data-detail-tab="members">Members</button> 
         <button class="chip" data-detail-tab="expenses">Expenses</button>
       </div>
 
@@ -223,13 +224,14 @@
             <button class="secondary-btn">View PDF</button>
           </div>
         </div>
-        <div class="panel">
-          <div class="row-between">
-            <h4>Members</h4>
-            <button class="small-link" id="open-add-member">+ Add member</button>
-          </div>
-          <div class="member-list" id="member-list-inline"></div>
+      </div>
+
+      <div id="trip-tab-members" class="tab-panel section hidden">
+        <div class="section-title">
+          <h3>Group members</h3>
+          <button class="small-link" id="open-add-member">+ Add member</button>
         </div>
+        <div class="member-list" id="member-list-inline"></div>
       </div>
 
       <div id="trip-tab-expenses" class="tab-panel section hidden">
@@ -327,16 +329,17 @@
         </div>
         <button class="small-link" id="save-trip-btn">Save</button>
       </div>
-
       <div class="form-card">
         <div class="form-group">
           <label for="trip-name">Name</label>
           <input id="trip-name" class="text-input" />
         </div>
+
         <div class="form-group">
           <label for="trip-destination">Destination</label>
           <input id="trip-destination" class="text-input" />
         </div>
+
         <div class="form-group">
           <label>Duration (days)</label>
           <div class="stepper">
@@ -345,19 +348,26 @@
             <button type="button" id="duration-plus">＋</button>
           </div>
         </div>
+
         <div class="form-group">
           <label for="trip-budget">Max budget per person (€)</label>
-          <input id="trip-budget" class="number-input" type="number" min="0" />
+          <input id="trip-budget" class="number-input money-style" type="number" min="0" placeholder="Ex: 400" />
         </div>
+
         <div class="form-group">
-          <label for="trip-members">Members</label>
-          <input id="trip-members" class="text-input"  />
-          <div class="helper-text">Separate names with commas.</div>
+          <label>Select members to invite</label>
+          <div id="trip-contact-list" class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="João"> João</label>
+            <label class="checkbox-item"><input type="checkbox" value="Ricardo"> Ricardo</label>
+            <label class="checkbox-item"><input type="checkbox" value="Tomás" checked> Tomás</label>
+            <label class="checkbox-item"><input type="checkbox" value="Sofia" checked> Sofia</label>
+            <label class="checkbox-item"><input type="checkbox" value="Nuno" checked> Nuno</label>
+            <label class="checkbox-item"><input type="checkbox" value="Leonor"> Leonor</label>
+          </div>
         </div>
+
         <button class="primary-btn" id="create-trip-submit">Create trip and continue</button>
       </div>
-    </div>
-  </div>
 
   <div class="modal" id="modal-add-expense">
     <div class="modal-sheet">
