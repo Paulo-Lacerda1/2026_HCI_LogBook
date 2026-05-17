@@ -170,39 +170,35 @@ select:focus {
   font-size: 1.25rem;
 }
 
-/* Atualiza o container principal do cabeçalho */
 .brand {
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 16px 0 8px 0; /* Margens muito mais limpas */
+    padding: 16px 0 8px 0;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Espaço perfeito entre a saudação e o logo */
+    gap: 8px; 
 }
 
-/* Deixa o texto do Hello mais harmonioso */
 .brand h1 {
     font-size: 1.65rem;
     font-weight: 800;
-    color: #1e293b; /* Um tom ligeiramente mais suave de escuro */
+    color: #1e293b; 
     letter-spacing: -0.02em;
     margin: 0;
     line-height: 1.1;
 }
 
-/* Transforma a secção do logotipo numa "pílula" moderna */
 .brand-mark {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #eef2ff; /* Fundo azul muito suave */
-    padding: 5px 12px 5px 6px; /* Espaçamento interior arredondado */
+    background: #eef2ff; 
+    padding: 5px 12px 5px 6px; 
     border-radius: 20px;
     width: fit-content;
 }
 
-/* Destaca o ícone do avião com um fundo branco circular */
 .brand-logo {
     width: 24px;
     height: 24px;
@@ -211,10 +207,9 @@ select:focus {
     background: white !important;
     border-radius: 50%;
     padding: 3px;
-    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15); /* Sombra elegante */
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15); 
 }
 
-/* Muda a cor do texto "SwipeTravel" de cinzento para azul da marca */
 .brand-mark .subtitle {
     color: #4f46e5;
     font-weight: 700;
@@ -930,11 +925,9 @@ select:focus {
 }
 
 .delete-btn:hover {
-  background-color: #fee2e2; /* Um vermelho muito leve */
+  background-color: #fee2e2; 
 }
 
-
-/* Container principal do card */
 .trip-card-main {
   display: flex;
   justify-content: space-between;
@@ -945,7 +938,6 @@ select:focus {
   flex: 1;
 }
 
-/* Nome -> Status */
 .status-arrow {
   color: #94a3b8;
   margin: 0 4px;
@@ -962,7 +954,6 @@ select:focus {
 .status-text.progress { color: #10b981; }
 .status-text.closed { color: #64748b; }
 
-/* Linha de baixo (Missing... e Votos) */
 .trip-details-row {
   display: flex;
   justify-content: space-between;
@@ -978,7 +969,6 @@ select:focus {
   border-radius: 12px;
 }
 
-/* Botão de lixo elegante */
 .delete-btn-elegant {
   background: transparent;
   border: none;
@@ -999,7 +989,7 @@ select:focus {
 .trip-card-content {
   display: flex;
   justify-content: space-between;
-  min-height: 80px; /* Garante altura mínima para o alinhamento */
+  min-height: 80px; 
 }
 
 .trip-info-side {
@@ -1009,16 +999,14 @@ select:focus {
   justify-content: center;
 }
 
-/* Coluna da Direita */
 .trip-actions-side {
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Empurra o lixo para cima e os votos para baixo */
-  align-items: flex-end; /* Alinha ambos à direita */
+  justify-content: space-between; 
+  align-items: flex-end; 
   padding-left: 12px;
 }
 
-/* Estilo do Contador de Votos */
 .votes-badge {
   font-size: 0.75rem;
   font-weight: 700;
@@ -1030,7 +1018,6 @@ select:focus {
   border: 1px solid #e0e7ff;
 }
 
-/* Ajuste do Botão de Lixo */
 .delete-btn-elegant {
   background: none;
   border: none;
@@ -1046,7 +1033,6 @@ select:focus {
   background: #fef2f2;
 }
 
-/* Seta e Status */
 .status-arrow { color: #cbd5e1; margin: 0 4px; }
 .status-text { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .status-text.planning { color: #f59e0b; }
@@ -1223,7 +1209,6 @@ select:focus {
     cursor: pointer;
 }
 
-/* Badge de Rating sobre a imagem */
 .rating-badge {
     position: absolute;
     top: 12px;
@@ -1238,7 +1223,6 @@ select:focus {
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* Etiquetas (Tags) */
 .tag-row {
     display: flex;
     gap: 6px;
@@ -1256,14 +1240,12 @@ select:focus {
     letter-spacing: 0.05em;
 }
 
-/* Linha de preço mais limpa */
 .price-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
 }
 
-/* Texto de ajuda do Swipe */
 .swipe-hint {
     text-align: center;
     margin-top: 18px;
@@ -1276,7 +1258,6 @@ select:focus {
     border: 1px dashed #e2e8f0;
 }
 
-/* --- CARIMBOS DE SWIPE (LIKE / SKIP) --- */
 .swipe-stamp {
   position: absolute;
   top: 20px;
@@ -1286,9 +1267,9 @@ select:focus {
   font-size: 2.2rem;
   font-weight: 900;
   text-transform: uppercase;
-  opacity: 0; /* Começam invisíveis! Só aparecem ao arrastar */
+  opacity: 0;
   z-index: 10;
-  pointer-events: none; /* Para não bloquear o clique do rato */
+  pointer-events: none; 
 }
 
 .stamp-like {
