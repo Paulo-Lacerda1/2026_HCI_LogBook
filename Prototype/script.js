@@ -14,7 +14,6 @@ const state = {
   authenticated: false,
   currentUser: null,
   trips: readJSON('swipetravel.trips', [
-    // Removed 'Summer Holidays' from here to start from scratch
     {
       id: 2,
       name: 'Barcelona Group',
@@ -273,7 +272,6 @@ function renderHome() {
   }
   const homeTripList = $('#home-trip-list');
   if(homeTripList) homeTripList.innerHTML = state.trips.map(renderTripCard).join('');
-  
 }
 
 function renderTripCard(trip) {
@@ -322,8 +320,18 @@ function renderTripDetail() {
   if($('#trip-detail-title')) $('#trip-detail-title').textContent = trip.name;
   if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
   if($('#vote-progress-label')) $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
-  if($('#winning-destination')) $('#winning-destination').innerHTML = `<strong>📍 ${trip.voteResults.destination}</strong>`;
-  if($('#winning-accommodation')) $('#winning-accommodation').innerHTML = `<strong>🏠 ${trip.voteResults.accommodation}</strong>`;
+  const destVencedor = (trip.voteResults.destination && trip.voteResults.destination !== 'TBD') ? trip.voteResults.destination : null;
+  const alojVencedor = (trip.voteResults.accommodation && trip.voteResults.accommodation !== 'TBD') ? trip.voteResults.accommodation : null;
+  if($('#winning-destination')) {
+    if (destVencedor) {
+      // Mostrar cada destino numa linha separada
+      const destinos = destVencedor.split(' & ');
+      $('#winning-destination').innerHTML = destinos.map(d => `<div><strong>📍 ${d}</strong></div>`).join('');
+    } else {
+      $('#winning-destination').innerHTML = `<span class="muted">A aguardar votação...</span>`;
+    }
+  }
+  if($('#winning-accommodation')) $('#winning-accommodation').innerHTML = alojVencedor ? `<strong>🏠 ${alojVencedor}</strong>` : `<span class="muted">A aguardar votação...</span>`;
   
   const activitiesContainer = $('#approved-activities');
   if(activitiesContainer) {
@@ -355,28 +363,26 @@ function renderTripDetail() {
   }
 
   const expList = $('#expense-list');
-if (expList) {
-  expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
-    <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
-      <div class="row-between">
-        <div>
-          <strong>${expense.title}</strong>
-          <div class="expense-note">Split between ${expense.participants} people</div>
+  if (expList) {
+    expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
+      <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
+        <div class="row-between">
+          <div>
+            <strong>${expense.title}</strong>
+            <div class="expense-note">Split between ${expense.participants} people</div>
+          </div>
+          <div class="expense-amount">€${Number(expense.amount).toFixed(2)}</div>
         </div>
-        <div class="expense-amount">€${Number(expense.amount).toFixed(2)}</div>
+        <div class="spacer-8"></div>
+        <div class="muted">Each person owes <strong>€${Number(expense.owedPerPerson).toFixed(2)}</strong></div>
+        <div class="spacer-8"></div>
+        ${expense.pending
+          ? `<button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as settled ✅</button>`
+          : '<div class="muted">Settled ✅</div>'
+        }
       </div>
-      <div class="spacer-8"></div>
-      <div class="muted">Each person owes <strong>€${Number(expense.owedPerPerson).toFixed(2)}</strong></div>
-      <div class="spacer-8"></div>
-      ${expense.pending
-        ? `<button class="secondary-btn" onclick="markExpensePaid(${trip.id}, ${expense.id})">Mark as settled ✅</button>`
-        : '<div class="muted">Settled ✅</div>'
-      }
-    </div>
-  `).join('') : '<div class="empty-state">No expenses yet.</div>';
-}
-
-  
+    `).join('') : '<div class="empty-state">No expenses yet.</div>';
+  }
 
   $$('[data-detail-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.detailTab === state.detailTab));
   if($('#trip-tab-votes')) $('#trip-tab-votes').classList.toggle('hidden', state.detailTab !== 'votes');
@@ -384,31 +390,45 @@ if (expList) {
   if($('#trip-tab-expenses')) $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
 }
 
+// ─── SUGESTÕES / SWIPE ────────────────────────────────────────────────────────
+
 function renderSuggestions() {
   const trip = getCurrentTrip();
   if (!trip) return;
-  
+
   if($('#suggestions-title')) $('#suggestions-title').textContent = `${trip.name} suggestions`;
-  
-  // Read from the trip object
+
   if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
+  if (!trip.likedSuggestions) trip.likedSuggestions = [];
+
   const index = trip.currentSuggestionIndex;
-  
-  const suggestion = trip.suggestions[index];
   const container = $('#suggestion-deck');
   if (!container) return;
 
-  if (!suggestion) {
+  // Votos já confirmados — mostrar ecrã final
+  if (trip.votesConfirmed) {
+    const liked = trip.likedSuggestions || [];
+    const plural = liked.length > 1;
+    const names = liked.map(c => `<strong>${c}</strong>`).join(' e ');
     container.innerHTML = `
-      <div class="empty-state">
-        <strong>📍 All suggestions reviewed</strong>
+      <div class="empty-state" style="padding: 28px 18px; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 14px;">📍</div>
+        <strong style="font-size: 1.1rem;">All suggestions reviewed</strong>
         <div class="spacer-8"></div>
-        <div>The destination <b>${trip.voteResults.destination}</b> was selected.</div>
+        <div>The destination${plural ? 's' : ''} <b>${names}</b> ${plural ? 'were' : 'was'} selected.</div>
         <div class="spacer-16"></div>
         <button class="primary-btn" onclick="setScreen('trip-detail')">Back to Trip</button>
       </div>`;
     return;
   }
+
+  // Todos os cartões foram vistos — mostrar ecrã de confirmação
+  if (index >= trip.suggestions.length) {
+    renderVoteConfirmation(trip, container);
+    return;
+  }
+
+  const suggestion = trip.suggestions[index];
 
   container.innerHTML = `
   <div class="suggestion-card" id="active-suggestion-card" style="position: relative;">
@@ -417,12 +437,12 @@ function renderSuggestions() {
     
     <div class="suggestion-image">
       <img src="${suggestion.image}" alt="${suggestion.city}">
-      <div class="rating-badge">⭐ ${suggestion.rating}</div>
+      <div class="rating-badge">⭐ ${suggestion.rating || '—'}</div>
     </div>
 
     <div class="suggestion-body">
       <div class="tag-row">
-        ${suggestion.tags.map(tag => `<span class="tag-chip">${tag}</span>`).join('')}
+        ${(suggestion.tags || []).map(tag => `<span class="tag-chip">${tag}</span>`).join('')}
       </div>
       <h3>${suggestion.city}</h3>
       <p class="muted">${suggestion.subtitle}</p>
@@ -440,11 +460,62 @@ function renderSuggestions() {
   </div>
 `;
 
-  // Swipe logic
+  attachSwipeListeners();
+}
+
+function renderVoteConfirmation(trip, container) {
+  const liked = trip.likedSuggestions || [];
+
+  let bodyHtml;
+  if (liked.length === 0) {
+    bodyHtml = `
+      <div class="vote-confirm-none">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">🤔</div>
+        <p style="font-weight: 700; font-size: 1.05rem; margin: 0 0 6px;">Não aprovaste nenhum destino.</p>
+        <p class="muted" style="margin: 0;">Faz swipe right em pelo menos um destino para continuar.</p>
+      </div>
+    `;
+  } else {
+    const names = liked.map(c => `<strong>${c}</strong>`).join(', ');
+    const plural = liked.length > 1;
+    bodyHtml = `
+      <div class="vote-confirm-header">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">🗳️</div>
+        <p class="vote-confirm-title">
+          O${plural ? 's' : ''} destino${plural ? 's' : ''} que selecionaste ${plural ? 'foram' : 'foi'}<br>${names}
+        </p>
+        <p class="vote-confirm-question">
+          Tens a certeza que er${plural ? 'am ess' : 'a ess'}a${plural ? 's' : ''} a${plural ? 's' : ''} tua${plural ? 's' : ''} escolha${plural ? 's' : ''}?
+        </p>
+      </div>
+      <div class="vote-confirm-actions">
+        <button class="primary-btn" onclick="confirmVotes(true)" style="margin-bottom: 10px;">✅ Sim, confirmar</button>
+        <button class="secondary-btn" onclick="confirmVotes(false)">🔄 Não, votar de novo</button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="vote-confirm-card">
+      ${bodyHtml}
+      ${liked.length === 0 ? `
+        <div class="spacer-16"></div>
+        <button class="secondary-btn" onclick="resetVotes()">🔄 Votar de novo</button>
+      ` : ''}
+    </div>
+  `;
+}
+
+function attachSwipeListeners() {
   const card = $('#active-suggestion-card');
+  if (!card) return;
+
   let startX = 0;
   let currentX = 0;
   let isDragging = false;
+
+  const stampLike = $('#stamp-like');
+  const stampSkip = $('#stamp-skip');
 
   const onStart = (e) => {
     isDragging = true;
@@ -457,11 +528,20 @@ function renderSuggestions() {
     currentX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
     const diff = currentX - startX;
     card.style.transform = `translateX(${diff}px) rotate(${diff / 15}deg)`;
-    
-    // Optional visual color feedback
-    if (diff > 50) card.style.background = '#ecfdf3'; // Like
-    else if (diff < -50) card.style.background = '#fff0f0'; // Skip
-    else card.style.background = 'white';
+
+    if (diff > 50) {
+      card.style.background = '#ecfdf3';
+      if (stampLike) stampLike.style.opacity = Math.min(1, (diff - 50) / 80);
+      if (stampSkip) stampSkip.style.opacity = 0;
+    } else if (diff < -50) {
+      card.style.background = '#fff0f0';
+      if (stampSkip) stampSkip.style.opacity = Math.min(1, (-diff - 50) / 80);
+      if (stampLike) stampLike.style.opacity = 0;
+    } else {
+      card.style.background = 'white';
+      if (stampLike) stampLike.style.opacity = 0;
+      if (stampSkip) stampSkip.style.opacity = 0;
+    }
   };
 
   const onEnd = () => {
@@ -482,6 +562,8 @@ function renderSuggestions() {
       card.style.transition = 'transform 0.3s ease, background 0.3s ease';
       card.style.transform = 'translateX(0) rotate(0)';
       card.style.background = 'white';
+      if (stampLike) stampLike.style.opacity = 0;
+      if (stampSkip) stampSkip.style.opacity = 0;
     }
   };
 
@@ -492,6 +574,80 @@ function renderSuggestions() {
   window.addEventListener('mouseup', onEnd);
   window.addEventListener('touchend', onEnd);
 }
+
+function swipeSuggestion(type) {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+
+  if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
+  if (!trip.likedSuggestions) trip.likedSuggestions = [];
+
+  const index = trip.currentSuggestionIndex;
+  const suggestion = trip.suggestions[index];
+  if (!suggestion) return;
+
+  // Guardar aprovados
+  if (type === 'like') {
+    if (!trip.likedSuggestions.includes(suggestion.city)) {
+      trip.likedSuggestions.push(suggestion.city);
+    }
+  }
+
+  trip.currentSuggestionIndex = index + 1;
+
+  saveTripsToStorage();
+  renderSuggestions();
+}
+
+function confirmVotes(confirmed) {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+
+  if (confirmed) {
+    const liked = trip.likedSuggestions || [];
+    // Guardar TODOS os destinos aprovados, separados por " & "
+    const allWinners = liked.length > 0 ? liked : [trip.voteResults.destination];
+    const winnersLabel = allWinners.join(' & ');
+
+    trip.voteResults.destination = winnersLabel;
+    trip.votesCompleted = trip.votesTotal;
+    trip.voteResults.accommodation = 'Airbnb em De Pijp (Quarto para 4)';
+    trip.approvedActivities = [
+      { name: '🚤 Passeio de Barco pelos Canais', price: 15 },
+      { name: '🚲 Aluguer de Bicicleta (Dia Inteiro)', price: 12 },
+      { name: '🎨 Museu Van Gogh', price: 22 }
+    ];
+    // Itinerário com todos os destinos aprovados listados
+    const itineraryItems = allWinners.map(c => `✅ Destino confirmado: ${c}`);
+    itineraryItems.push('Próximo passo: Votar em alojamento e atividades.');
+    trip.itinerary = [{
+      day: 1,
+      nowNextTitle: 'Destino escolhido!',
+      items: itineraryItems
+    }];
+    trip.pendingActions = [];
+    trip.missingItem = '';
+    trip.votesConfirmed = true;
+
+    saveTripsToStorage();
+    render();
+  } else {
+    // Votar de novo: repor índice e lista de aprovados
+    resetVotes();
+  }
+}
+
+function resetVotes() {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+  trip.currentSuggestionIndex = 0;
+  trip.likedSuggestions = [];
+  trip.votesConfirmed = false;
+  saveTripsToStorage();
+  renderSuggestions();
+}
+
+// ─── RESTO DAS FUNÇÕES ────────────────────────────────────────────────────────
 
 function toBase64(file) {
   return new Promise((resolve, reject) => {
@@ -524,7 +680,6 @@ function renderExpensePayerOptions() {
   const select = $('#expense-payer');
   if(select) select.innerHTML = trip.members.map((member) => `<option value="${member}">${member}</option>`).join('');
   
-  // Nova lógica: Cria uma checkbox por cada membro da viagem
   const membersContainer = $('#expense-custom-members');
   if (membersContainer) {
     membersContainer.innerHTML = trip.members.map(member => `
@@ -577,50 +732,6 @@ function removeMember(memberName) {
   render();
 }
 
-function swipeSuggestion(type) {
-  const trip = getCurrentTrip();
-  if (!trip) return;
-  
-  if (trip.currentSuggestionIndex === undefined) trip.currentSuggestionIndex = 0;
-  const index = trip.currentSuggestionIndex;
-  
-  const suggestion = trip.suggestions[index];
-  if (!suggestion) return;
-
-  if (type === 'like') {
-      // 1. Record the winning destination based on the card
-    trip.voteResults.destination = suggestion.city;
-    trip.votesCompleted = trip.votesTotal; 
-    
-      // 2. Fill in the accommodation and activities here (the prototype's Wizard of Oz)
-    trip.voteResults.accommodation = 'Airbnb in De Pijp (Room for 4)';
-    trip.approvedActivities = [
-      { name: '🚤 Canal Boat Trip', price: 15 },
-      { name: '🚲 Bicycle Hire (Full Day)', price: 12 },
-      { name: '🎨 Van Gogh Museum', price: 22 }
-    ];
-
-      // 3. Update the itinerary to remove the "Waiting for vote" message
-    trip.itinerary = [{
-      day: 1,
-      nowNextTitle: 'Destination chosen!',
-      items: [
-        `✅ Destination confirmed: ${suggestion.city}`,
-        `Next step: Vote on accommodation and activities.`
-      ]
-    }];
-
-      // 4. Clear pending actions
-    trip.pendingActions = trip.pendingActions.filter(a => !a.description.includes('voto'));
-    trip.missingItem = '';
-  }
-
-  trip.currentSuggestionIndex = index + 1;
-  
-  saveTripsToStorage(); 
-  render(); 
-}
-
 function createTrip() {
   const nameInput = $('#trip-name');
   const destinationInput = $('#trip-destination');
@@ -632,13 +743,10 @@ function createTrip() {
   const budget = Number(budgetInput?.value || 0);
   const membersRaw = membersInput?.value.trim();
   
-  // 1. Corrected member logic:
   let members = [];
   if (membersRaw) {
-    // If you entered names, add "You" to the list to ensure you are one of the members
     members = ['You', ...membersRaw.split(',').map((item) => item.trim()).filter(Boolean)];
   } else {
-    // If left empty, use the default group
     members = ['You', 'Tomas', 'Sofia', 'Nuno'];
   }
 
@@ -647,9 +755,6 @@ function createTrip() {
     return; 
   }
 
-  // 2. Vote calculation:
-  // If members are ['You', 'Maria'], vTotal is 2.
-  // vCompleted will be 2 - 1 = 1. Result: 1/2 votes.
   const vTotal = members.length; 
   const vCompleted = Math.max(0, vTotal - 1); 
 
@@ -665,10 +770,11 @@ function createTrip() {
     status: 'planning',
     members: members,
     votesCompleted: vCompleted, 
-    votesTotal: vTotal,         
+    votesTotal: vTotal,
     currentSuggestionIndex: 0,
+    likedSuggestions: [],
     missingItem: 'Destination',
-    approvedActivities: [], // <--- Fica vazio no início
+    approvedActivities: [],
     itinerary: [{ 
       day: 1, 
       nowNextTitle: 'Planning', 
@@ -681,38 +787,36 @@ function createTrip() {
       cta: 'Go vote now' 
     }],
     suggestions: [
-    { 
-      city: 'Amsterdam', 
-      subtitle: 'Iconic canals and lively atmosphere', 
-      avgCost: 425, 
-      emoji: '🌷',
-      image: 'amsterdao.jpg',
-      rating: 4.8,
-      tags: ['Culture', 'Nightlife']
-    },
-    { 
-      city: 'Rotterdam', 
-      subtitle: 'Futuristic architecture and historic port', 
-      avgCost: 185, 
-      emoji: '🏗️',
-      // Updated link and corrected Unsplash parameters
-      image: 'roterdao.jpg',
-      rating: 4.5,
-      tags: ['Design', 'Modern']
-    },
-    { 
-      city: 'Utrecht', 
-      subtitle: 'Charming canals and a university vibe', 
-      avgCost: 230, 
-      emoji: '🚲',
-      image: 'utrecht.jpg',
-      rating: 4.6,
-      tags: ['History', 'Relax']
-    }
-  ],
+      { 
+        city: 'Amsterdam', 
+        subtitle: 'Iconic canals and lively atmosphere', 
+        avgCost: 425, 
+        emoji: '🌷',
+        image: 'amsterdao.jpg',
+        rating: 4.8,
+        tags: ['Culture', 'Nightlife']
+      },
+      { 
+        city: 'Rotterdam', 
+        subtitle: 'Futuristic architecture and historic port', 
+        avgCost: 185, 
+        emoji: '🏗️',
+        image: 'roterdao.jpg',
+        rating: 4.5,
+        tags: ['Design', 'Modern']
+      },
+      { 
+        city: 'Utrecht', 
+        subtitle: 'Charming canals and a university vibe', 
+        avgCost: 230, 
+        emoji: '🚲',
+        image: 'utrecht.jpg',
+        rating: 4.6,
+        tags: ['History', 'Relax']
+      }
+    ],
     voteResults: { destination: 'TBD', accommodation: 'TBD' }
-  }
-  ;
+  };
 
   state.trips.unshift(newTrip);
   saveTripsToStorage();
@@ -742,11 +846,9 @@ function saveExpense() {
     return;
   }
 
-  // Conta os participantes consoante o tipo de divisão
   let participantsCount = trip.members.length;
 
   if (splitType === 'custom') {
-    // Procura todas as checkboxes que estão marcadas com 'checked'
     const checkedBoxes = $$('#expense-custom-members input[type="checkbox"]:checked');
     participantsCount = checkedBoxes.length;
 
@@ -768,7 +870,6 @@ function saveExpense() {
     pending: true
   });
 
-  // Limpa o formulário
   if ($('#expense-description')) $('#expense-description').value = '';
   if ($('#expense-total')) $('#expense-total').value = '';
   if ($('#expense-split')) $('#expense-split').value = 'all';
@@ -804,7 +905,6 @@ async function saveSuggestion() {
     votes: 0
   });
 
-  // Reset
   $('#suggestion-city').value = '';
   $('#suggestion-subtitle').value = '';
   $('#suggestion-cost').value = '';
@@ -818,14 +918,12 @@ async function saveSuggestion() {
 }
 
 function deleteTrip(event, id) {
-  // Prevents the browser from opening trip details when clicking the trash icon
   event.stopPropagation();
 
   if (confirm('Are you sure you want to delete this trip?')) {
     state.trips = state.trips.filter(trip => trip.id !== id);
-    
-    saveTripsToStorage(); // Update local storage to persist changes
-    render();             // Update the interface
+    saveTripsToStorage();
+    render();
   }
 }
 
@@ -845,7 +943,6 @@ function saveMember() {
   render();
   alert(includePrevious ? `${name} added and included in previous expenses.` : `${name} added successfully.`);
 }
-
 
 function saveTripsToStorage() {
   writeJSON('swipetravel.trips', state.trips);
@@ -887,6 +984,36 @@ safeListen('#logout-btn', 'click', logout);
 safeListen('#open-add-suggestion', 'click', () => openModal('modal-add-suggestion'));
 safeListen('#save-suggestion-btn', 'click', saveSuggestion);
 
+// Migração v2: repor votação em trips onde o destino foi gravado pelo código antigo
+// (votesConfirmed=true mas likedSuggestions não inclui todos os votos reais do utilizador).
+// Versão guardada no trip para não repetir o reset.
+(function migrateTripData() {
+  const MIGRATION_VERSION = 2;
+  let changed = false;
+  state.trips.forEach(function(trip) {
+    if (!Array.isArray(trip.likedSuggestions)) {
+      trip.likedSuggestions = [];
+      changed = true;
+    }
+    // Se ainda não passou pela migração v2, repor a votação para que o utilizador
+    // possa votar de novo com o novo sistema que guarda todos os likes.
+    if ((trip.migrationVersion || 0) < MIGRATION_VERSION) {
+      trip.votesConfirmed = false;
+      trip.currentSuggestionIndex = 0;
+      trip.likedSuggestions = [];
+      trip.migrationVersion = MIGRATION_VERSION;
+      // Repor destino e itinerário para TBD se o trip não era "closed"
+      if (trip.status !== 'closed') {
+        trip.voteResults = { destination: 'TBD', accommodation: 'TBD' };
+        trip.itinerary = [{ day: 1, items: ['Trip created. Waiting for your final vote.'] }];
+        trip.votesCompleted = Math.max(0, (trip.votesTotal || trip.members.length) - 1);
+      }
+      changed = true;
+    }
+  });
+  if (changed) writeJSON('swipetravel.trips', state.trips);
+})();
+
 seedDemoAccount();
 loadSession();
 render();
@@ -898,3 +1025,44 @@ window.markExpensePaid = markExpensePaid;
 window.removeMember = removeMember;
 window.swipeSuggestion = swipeSuggestion;
 window.deleteTrip = deleteTrip;
+window.confirmVotes = confirmVotes;
+window.resetVotes = resetVotes;
+window.setScreen = setScreen;
+// CSS para o ecrã de confirmação — injetado dinamicamente
+(function injectVoteConfirmStyles() {
+  if (document.getElementById('vote-confirm-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'vote-confirm-styles';
+  style.textContent = `
+    .vote-confirm-card {
+      background: var(--surface, #fff);
+      border-radius: 20px;
+      border: 1px solid rgba(219, 228, 240, 0.8);
+      box-shadow: 0 10px 30px rgba(20, 34, 66, 0.08);
+      padding: 28px 20px 24px;
+      text-align: center;
+    }
+    .vote-confirm-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #172033;
+      margin: 0 0 14px;
+      line-height: 1.5;
+    }
+    .vote-confirm-question {
+      font-size: 0.95rem;
+      color: #667085;
+      margin: 0 0 24px;
+      font-weight: 600;
+    }
+    .vote-confirm-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .vote-confirm-none {
+      padding: 8px 0 20px;
+    }
+  `;
+  document.head.appendChild(style);
+})();
