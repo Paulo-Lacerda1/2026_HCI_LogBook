@@ -136,7 +136,7 @@
             <div class="promo-overlay"></div>
             <div class="promo-content">
               <div class="promo-left">
-                <h4 class="promo-title">Amsterdam package</h4>
+                <h4 class="promo-title">Almelo package</h4>
                 <p class="promo-meta">For groups of 4+ people</p>
               </div>
               <div class="promo-right">
@@ -178,7 +178,7 @@
           <h2 id="trip-detail-title">Trip</h2>
           <div class="subtitle" id="trip-detail-subtitle">Details</div>
         </div>
-        <button class="icon-btn" id="trip-settings-btn">⚙️</button>
+        <button class="small-link" id="trip-finish-btn" style="color: var(--primary); font-weight: 800; font-size: 0.95rem; background: #eef2ff; padding: 6px 12px; border-radius: 10px;">Finish</button>
       </div>
 
       <div class="tab-row">
@@ -204,9 +204,9 @@
           <h4>Approved activities</h4>
           <div id="approved-activities"></div>
         </div>
-        <button class="secondary-btn" id="open-suggestions">View destination suggestions</button>
+        <button class="primary-btn" id="open-suggestions">Vote</button>
         <div class="spacer-8"></div>
-        <button class="primary-btn" id="export-pdf-btn">Export PDF</button>
+        <button class="secondary-btn" id="export-pdf-btn">Export PDF</button>
       </div>
 
       <div id="trip-tab-itinerary" class="tab-panel section hidden">
@@ -263,7 +263,6 @@
 
       <div class="spacer-16"></div>
       <div id="suggestion-deck"></div>
-      
     </section>
 
     <section id="screen-profile" class="screen">
@@ -332,11 +331,11 @@
       <div class="form-card">
         <div class="form-group">
           <label for="trip-name">Name</label>
-          <input id="trip-name" class="text-input" placeholder="Summer Holidays" />
+          <input id="trip-name" class="text-input" />
         </div>
         <div class="form-group">
           <label for="trip-destination">Destination</label>
-          <input id="trip-destination" class="text-input" placeholder="Netherlands" />
+          <input id="trip-destination" class="text-input" />
         </div>
         <div class="form-group">
           <label>Duration (days)</label>
@@ -348,11 +347,11 @@
         </div>
         <div class="form-group">
           <label for="trip-budget">Max budget per person (€)</label>
-          <input id="trip-budget" class="number-input" type="number" min="0" placeholder="1000" />
+          <input id="trip-budget" class="number-input" type="number" min="0" />
         </div>
         <div class="form-group">
           <label for="trip-members">Members</label>
-          <input id="trip-members" class="text-input" placeholder="Maria, ..." />
+          <input id="trip-members" class="text-input"  />
           <div class="helper-text">Separate names with commas.</div>
         </div>
         <button class="primary-btn" id="create-trip-submit">Create trip and continue</button>
@@ -373,7 +372,7 @@
       <div class="form-card">
         <div class="form-group">
           <label for="expense-description">Description</label>
-          <input id="expense-description" class="text-input" placeholder="Supermarket" />
+          <input id="expense-description" class="text-input" placeholder="New expense" />
         </div>
         <div class="form-group">
           <label for="expense-total">Total amount (€)</label>
@@ -421,7 +420,7 @@
       <div class="form-card">
         <div class="form-group">
           <label for="member-name">Member name</label>
-          <input id="member-name" class="text-input" placeholder="João" />
+          <input id="member-name" class="text-input" placeholder="Name" />
         </div>
         <div class="form-group">
           <label for="include-previous-expenses">Include in previous expenses?</label>
