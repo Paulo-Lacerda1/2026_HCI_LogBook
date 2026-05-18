@@ -13,13 +13,15 @@ O protótipo inclui os ecrãs principais da aplicação, como a página inicial,
 
 As imagens seguintes mostram os alguns dos ecrãs do protótipo de baixa fidelidade:
 
-![Protótipo de baixa fidelidade - Ecrã 1](prot1.jpeg)
+<p align="center">
+  <img src="prot1.jpeg" width="180">
+  <img src="prot2.jpeg" width="180">
+</p>
 
-![Protótipo de baixa fidelidade - Ecrã 2](prot2.jpeg)
-
-![Protótipo de baixa fidelidade - Ecrã 3](prot3.jpeg)
-
-![Protótipo de baixa fidelidade - Ecrã 4](prot4.jpeg)
+<p align="center">
+  <img src="prot3.jpeg" width="180">
+  <img src="prot4.jpeg" width="180">
+</p>
 
 ### Principais funcionalidades representadas
 
