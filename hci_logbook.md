@@ -7,6 +7,7 @@ Work carried out by:
 # *HCI Project Logbook*
 
 **Title of the project**: SwipeTravel
+
 **Team:**
 - Student 1: João Vieira, 118643
 - Student 2; Paulo Lacerda, 120202
