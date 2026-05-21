@@ -324,14 +324,49 @@ function renderTripDetail() {
   if (!trip) return;
   const currentUserName = state.currentUser?.name || 'You';
 
+  if (!trip.acceptedMembers) trip.acceptedMembers = [...trip.members];
+  const hasAccepted = trip.acceptedMembers.includes(currentUserName);
+
+  // --- LÓGICA DE LIMPEZA VISUAL (Oculta tudo menos o convite) ---
+  const topbarBrand = $('#screen-trip-detail .brand.centered-brand');
+  const finishBtn = $('#trip-finish-btn');
+  const tabRow = $('#screen-trip-detail .tab-row');
+
+  if (!hasAccepted) {
+    if (topbarBrand) topbarBrand.style.visibility = 'hidden'; // Esconde o nome e detalhes da viagem
+    if (finishBtn) finishBtn.style.display = 'none'; // Esconde o botão Finish
+    if (tabRow) tabRow.style.display = 'none'; // Esconde as abas (Votes, Itinerary...)
+  } else {
+    // Quando a pessoa aceita, volta a mostrar tudo!
+    if (topbarBrand) topbarBrand.style.visibility = 'visible';
+    if (finishBtn) finishBtn.style.display = 'block';
+    if (tabRow) tabRow.style.display = 'flex';
+  }
+  // ---------------------------------------------------------------
+
   if($('#trip-detail-title')) $('#trip-detail-title').textContent = trip.name;
   if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
   if($('#vote-progress-label')) $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
   
-  // MAGIA DOS VOTOS: Cadeado até votarem todos
+  // MAGIA DOS VOTOS: Convite -> Cadeado -> Vencedores
   const votesTab = $('#trip-tab-votes');
   if (votesTab) {
-    if (trip.votesCompleted >= trip.votesTotal || trip.votesConfirmed) {
+    if (!hasAccepted) {
+      // 1. ESTADO DE CONVITE (Limpámos também o título para ficar só o cartão no centro)
+      votesTab.innerHTML = `
+        <div class="panel" style="text-align: center; padding: 40px 20px; background: white; border: 1px solid var(--border); border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04);">
+          <div style="font-size: 3.5rem; margin-bottom: 16px;">💌</div>
+          <h3 style="margin-bottom: 8px; color: #1e293b;">${trip.creator} invited you to ${trip.name}</h3>
+          <p class="muted" style="margin-bottom: 24px;">Accept the invitation to join the group, view the itinerary, and vote for the destination.</p>
+          <div class="btn-row">
+            <button class="danger-btn" style="background: #fff1f1; color: var(--danger);" onclick="respondToInvite(false)">Decline</button>
+            <button class="primary-btn" onclick="respondToInvite(true)">Accept & Join</button>
+          </div>
+        </div>
+      `;
+    } 
+    else if (trip.votesCompleted >= trip.votesTotal || trip.votesConfirmed) {
+      // 2. VOTAÇÃO FECHADA (Resultados Finais)
       votesTab.innerHTML = `
         <div class="section-title">
           <h3>Winning decisions</h3>
@@ -357,6 +392,7 @@ function renderTripDetail() {
         <button class="secondary-btn" id="export-pdf-btn">Export PDF</button>
       `;
     } else {
+      // 3. VOTAÇÃO EM CURSO
       const hasVoted = trip.votedMembers && trip.votedMembers.includes(currentUserName);
       votesTab.innerHTML = `
         <div class="section-title">
@@ -405,15 +441,24 @@ function renderTripDetail() {
   if($('#pending-balance-count')) $('#pending-balance-count').textContent = `${pendingExpenses.length} pending`;
 
   if($('#member-list-inline')) {
-    $('#member-list-inline').innerHTML = trip.members.map((member) => `
-      <div class="member-row">
-        <div class="member-info">
-          <div class="avatar">${initials(member)}</div>
-          <div><strong>${member}</strong><div class="muted">${member === trip.creator ? 'Trip Organizer' : 'Trip Member'}</div></div>
+    $('#member-list-inline').innerHTML = trip.members.map((member) => {
+      const isMe = member.trim().toLowerCase() === currentUserName.trim().toLowerCase();
+      
+      return `
+        <div class="member-row">
+          <div class="member-info">
+            <div class="avatar">${initials(member)}</div>
+            <div>
+              <strong>${member}</strong>
+              <div class="muted">${member === trip.creator ? 'Trip Organizer' : 'Trip Member'}</div>
+            </div>
+          </div>
+          ${isMe 
+            ? `<button class="small-link" style="color: var(--danger);" onclick="removeMember('${member.replace(/'/g, "\\'")}')">Leave trip</button>` 
+            : ''}
         </div>
-        <button class="small-link" onclick="removeMember('${member.replace(/'/g, "\\'")}')">Remove</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   const expList = $('#expense-list');
@@ -447,6 +492,115 @@ function renderTripDetail() {
   if($('#trip-tab-itinerary')) $('#trip-tab-itinerary').classList.toggle('hidden', state.detailTab !== 'itinerary');
   if($('#trip-tab-members')) $('#trip-tab-members').classList.toggle('hidden', state.detailTab !== 'members');
   if($('#trip-tab-expenses')) $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
+}
+
+// NOVA FUNÇÃO: Processa a resposta ao convite inicial
+function respondToInvite(accepted) {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+  const currentUserName = state.currentUser?.name || 'You';
+
+  if (accepted) {
+    if (!trip.acceptedMembers) trip.acceptedMembers = [];
+    if (!trip.acceptedMembers.includes(currentUserName)) {
+      trip.acceptedMembers.push(currentUserName);
+    }
+
+    // Retira do aviso "Trip Invitation"
+    const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
+    if (inviteAction && inviteAction.targetUsers) {
+      inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
+    }
+
+    // Coloca no aviso "Voting in progress"
+    let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
+    if (voteAction) {
+      if (!voteAction.targetUsers) voteAction.targetUsers = [];
+      voteAction.targetUsers.push(currentUserName);
+    }
+
+    saveTripsToStorage();
+    render();
+  } else {
+    if (confirm('Are you sure you want to decline this invitation?')) {
+      // Remove do grupo
+      trip.members = trip.members.filter(m => m !== currentUserName);
+      
+      // Remove do aviso
+      const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
+      if (inviteAction && inviteAction.targetUsers) {
+        inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
+      }
+      
+      saveTripsToStorage();
+      setScreen('home');
+      render();
+    }
+  }
+}
+
+// ATUALIZAR FUNÇÃO DE VOTO: Para usar o "type: 'vote'" na pesquisa de avisos
+function confirmVotes(confirmed) {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+  const currentUserName = state.currentUser?.name || 'You';
+
+  if (confirmed) {
+    if (!trip.votedMembers) trip.votedMembers = [trip.creator || 'You'];
+    
+    if (!trip.votedMembers.includes(currentUserName)) {
+      trip.votedMembers.push(currentUserName);
+    }
+    trip.votesCompleted = trip.votedMembers.length;
+    
+    const liked = trip.likedSuggestions || [];
+    liked.forEach(city => {
+      const sug = trip.suggestions.find(s => s.city === city);
+      if (sug) sug.votes = (sug.votes || 0) + 1;
+    });
+
+    if (trip.votesCompleted >= trip.votesTotal) {
+      const winner = trip.suggestions.reduce((max, obj) => (obj.votes > max.votes) ? obj : max, trip.suggestions[0]);
+      
+      trip.voteResults.destination = winner.city;
+      trip.votesConfirmed = true;
+      trip.voteResults.accommodation = 'Airbnb em De Pijp (Quarto para 4)';
+      trip.approvedActivities = [
+        { name: '🚤 Passeio de Barco pelos Canais', price: 15 },
+        { name: '🚲 Aluguer de Bicicleta (Dia todo)', price: 12 },
+        { name: '🎨 Museu Van Gogh', price: 22 }
+      ];
+      trip.itinerary = [{
+        day: 1,
+        nowNextTitle: 'Votes confirmed!',
+        items: [`✅ Destination: ${winner.city}`]
+      }];
+      
+      trip.participationConfirmed = []; 
+      trip.pendingActions = [{
+        title: 'Confirm presence',
+        description: `Destination decided: ${winner.city}. Are you still going?`,
+        cta: 'Confirm now',
+        targetUsers: [...trip.members]
+      }];
+      trip.missingItem = 'Confirmations';
+      
+    } else {
+      // Usa .find para retirar o aviso de quem acabou de votar
+      const action = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
+      if (action && action.targetUsers) {
+        action.targetUsers = action.targetUsers.filter(u => u !== currentUserName);
+      }
+      trip.currentSuggestionIndex = 0;
+      trip.likedSuggestions = [];
+    }
+
+    saveTripsToStorage();
+    render();
+    setScreen('trip-detail');
+  } else {
+    resetVotes();
+  }
 }
 
 // ─── SUGESTÕES / SWIPE ────────────────────────────────────────────────────────
@@ -843,12 +997,35 @@ function markExpensePaid(tripId, expenseId) {
 function removeMember(memberName) {
   const trip = getCurrentTrip();
   if (!trip) return;
-  trip.members = trip.members.filter((member) => member !== memberName);
-  saveTripsToStorage();
-  render();
+  
+  const currentUserName = state.currentUser?.name || 'You';
+  
+  // Dupla proteção de segurança: Garante que só podes remover a ti próprio!
+  if (memberName.trim().toLowerCase() !== currentUserName.trim().toLowerCase()) {
+    alert("Security error: You can only remove yourself from this trip.");
+    return;
+  }
+  
+  if (confirm('Are you sure you want to leave this trip? You will lose access to it.')) {
+    // 1. Remove o utilizador atual da lista de membros
+    trip.members = trip.members.filter((m) => m.trim().toLowerCase() !== currentUserName.trim().toLowerCase());
+    
+    // 2. Remove o utilizador de quaisquer ações pendentes (para limpar os avisos)
+    if (trip.pendingActions) {
+      trip.pendingActions.forEach(action => {
+        if (action.targetUsers) {
+          action.targetUsers = action.targetUsers.filter(u => u.trim().toLowerCase() !== currentUserName.trim().toLowerCase());
+        }
+      });
+    }
+    
+    // 3. Grava as alterações e manda a pessoa para a página inicial
+    saveTripsToStorage();
+    setScreen('home');
+    render();
+  }
 }
 
-// MAGIA: Criação com Checkboxes e 1 voto pro Criador
 function createTrip() {
   const nameInput = $('#trip-name');
   const destinationInput = $('#trip-destination');
@@ -884,6 +1061,7 @@ function createTrip() {
     budget: budget,
     status: 'planning',
     members: members,
+    acceptedMembers: [myName], // NOVO: Só o criador está confirmado no início
     votesCompleted: vCompleted, 
     votesTotal: vTotal,
     votedMembers: [myName],
@@ -894,15 +1072,25 @@ function createTrip() {
     itinerary: [{ 
       day: 1, 
       nowNextTitle: 'Planning', 
-      items: ['Trip created. Waiting for members to vote.'] 
+      items: ['Trip created. Waiting for members to join and vote.'] 
     }],
     expenses: [],
-    pendingActions: [{ 
-      title: 'Voting in progress', 
-      description: `Your vote is needed to decide the destination of ${name}.`, 
-      cta: 'Go vote now',
-      targetUsers: invitedMembers 
-    }],
+    pendingActions: [
+      { 
+        title: 'Trip Invitation', 
+        description: `${myName} invited you to join ${name}.`, 
+        cta: 'Respond',
+        targetUsers: invitedMembers, // Convite vai para os outros
+        type: 'invite'
+      },
+      { 
+        title: 'Voting in progress', 
+        description: `Your vote is needed to decide the destination of ${name}.`, 
+        cta: 'Go vote now',
+        targetUsers: [], // Vazio no início, só entra quem aceitar o convite!
+        type: 'vote'
+      }
+    ],
     suggestions: [
       { city: 'Amesterdão', subtitle: 'Canais icónicos e vida vibrante', avgCost: 425, emoji: '🌷', image: 'amsterdao.jpg', rating: 4.8, tags: ['Cultura', 'Noite'], votes: 1 },
       { city: 'Roterdão', subtitle: 'Arquitetura futurista e porto histórico', avgCost: 185, emoji: '🏗️', image: 'roterdao.jpg', rating: 4.5, tags: ['Design', 'Moderna'], votes: 0 },
@@ -1118,3 +1306,4 @@ window.confirmVotes = confirmVotes;
 window.resetVotes = resetVotes;
 window.setScreen = setScreen;
 window.confirmParticipation = confirmParticipation;
+window.respondToInvite = respondToInvite;
