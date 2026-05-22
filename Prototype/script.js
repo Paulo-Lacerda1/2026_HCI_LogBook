@@ -45,7 +45,6 @@ function saveAccounts(accounts) {
   writeJSON(STORAGE_KEYS.accounts, accounts);
 }
 
-// MAGIA: Usar sessionStorage para as Abas Múltiplas funcionarem!
 function saveSession() {
   if (!state.authenticated || !state.currentUser) {
     sessionStorage.removeItem(STORAGE_KEYS.session);
@@ -235,7 +234,6 @@ function renderAuth() {
   if($('#auth-register-form')) $('#auth-register-form').classList.toggle('hidden', state.authMode !== 'register');
 }
 
-// LISTAGEM DE VIAGENS FILTRADAS
 function renderHome() {
   const currentUserName = state.currentUser?.name || 'User';
   const homeGreeting = $('#screen-home .brand h1');
@@ -305,7 +303,6 @@ function renderTripCard(trip) {
 }
 
 
-// Função que desenha o Toast de Fim de Votação com contador de 10s
 function showVotingDoneToast(message) {
   const existing = document.getElementById('voting-done-toast');
   if (existing) existing.remove();
@@ -314,7 +311,6 @@ function showVotingDoneToast(message) {
   const notifBox = document.createElement('div');
   notifBox.id = 'voting-done-toast';
   
-  // Cor azul informativa (#0284c7) para destacar que é uma mudança de fase
   notifBox.style.cssText = `
     position: absolute;
     top: 80px;
@@ -374,7 +370,7 @@ function showVotingDoneToast(message) {
   }, 1000);
 }
 
-// Verifica se a viagem do utilizador atual terminou a votação e mostra o Toast
+
 function checkAndShowVotingDoneNotification() {
   const currentUserName = state.currentUser?.name;
   if (!currentUserName) return;
@@ -382,7 +378,6 @@ function checkAndShowVotingDoneNotification() {
   const finishedTrip = state.trips.find(trip => {
     const isMember = trip.acceptedMembers?.includes(currentUserName);
     
-    // CORREÇÃO: Em vez de comparar arrays, olhamos para a flag oficial de fim de votação!
     const isVotingPhaseOver = trip.votesConfirmed === true;
 
     if (!trip.notifiedVotingDone) trip.notifiedVotingDone = [];
@@ -393,11 +388,36 @@ function checkAndShowVotingDoneNotification() {
 
   if (!finishedTrip) return;
 
-  // Regista imediatamente que este utilizador já foi notificado
   finishedTrip.notifiedVotingDone.push(currentUserName);
   saveTripsToStorage();
 
   showVotingDoneToast("Vote phase is done!! Go to itenerary and vote to stay or leave");
+}
+
+function checkAndShowToastEvents() {
+  const currentUserName = state.currentUser?.name;
+  if (!currentUserName) return;
+
+  let needsSave = false;
+
+  state.trips.forEach(trip => {
+    if (!trip.toastEvents) return;
+
+    trip.toastEvents.forEach(event => {
+      if (event.targetUsers.includes(currentUserName) && !event.notifiedUsers.includes(currentUserName)) {
+
+        const isErrorToast = event.type === 'MEMBER_LEFT' || event.type === 'INVITE_DECLINED';
+        showActionToast(event.message, isErrorToast);
+
+        event.notifiedUsers.push(currentUserName);
+        needsSave = true;
+      }
+    });
+  });
+
+  if (needsSave) {
+    saveTripsToStorage();
+  }
 }
 
 function renderTrips() {
@@ -424,32 +444,27 @@ function renderTripDetail() {
   if (!trip.acceptedMembers) trip.acceptedMembers = [...trip.members];
   const hasAccepted = trip.acceptedMembers.includes(currentUserName);
 
-  // --- LÓGICA DE LIMPEZA VISUAL (Oculta tudo menos o convite) ---
   const topbarBrand = $('#screen-trip-detail .brand.centered-brand');
   const finishBtn = $('#trip-finish-btn');
   const tabRow = $('#screen-trip-detail .tab-row');
 
   if (!hasAccepted) {
-    if (topbarBrand) topbarBrand.style.visibility = 'hidden'; // Esconde o nome e detalhes da viagem
-    if (finishBtn) finishBtn.style.display = 'none'; // Esconde o botão Finish
-    if (tabRow) tabRow.style.display = 'none'; // Esconde as abas (Votes, Itinerary...)
+    if (topbarBrand) topbarBrand.style.visibility = 'hidden'; 
+    if (finishBtn) finishBtn.style.display = 'none'; 
+    if (tabRow) tabRow.style.display = 'none'; 
   } else {
-    // Quando a pessoa aceita, volta a mostrar tudo!
     if (topbarBrand) topbarBrand.style.visibility = 'visible';
     if (finishBtn) finishBtn.style.display = 'block';
     if (tabRow) tabRow.style.display = 'flex';
   }
-  // ---------------------------------------------------------------
 
   if($('#trip-detail-title')) $('#trip-detail-title').textContent = trip.name;
   if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
   if($('#vote-progress-label')) $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
-  
-  // MAGIA DOS VOTOS: Convite -> Cadeado -> Vencedores
+
   const votesTab = $('#trip-tab-votes');
   if (votesTab) {
     if (!hasAccepted) {
-      // 1. ESTADO DE CONVITE (Limpámos também o título para ficar só o cartão no centro)
       votesTab.innerHTML = `
         <div class="panel" style="text-align: center; padding: 40px 20px; background: white; border: 1px solid var(--border); border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04);">
           <div style="font-size: 3.5rem; margin-bottom: 16px;">💌</div>
@@ -463,7 +478,6 @@ function renderTripDetail() {
       `;
     } 
     else if (trip.votesCompleted >= trip.votesTotal || trip.votesConfirmed) {
-      // 2. VOTAÇÃO FECHADA (Resultados Finais)
       votesTab.innerHTML = `
         <div class="section-title">
           <h3>Winning decisions</h3>
@@ -489,7 +503,6 @@ function renderTripDetail() {
         <button class="secondary-btn" id="export-pdf-btn">Export PDF</button>
       `;
     } else {
-      // 3. VOTAÇÃO EM CURSO
       const hasVoted = trip.votedMembers && trip.votedMembers.includes(currentUserName);
       votesTab.innerHTML = `
         <div class="section-title">
@@ -532,14 +545,26 @@ function renderTripDetail() {
     $('#itinerary-current').innerHTML = confirmPresenceHtml + itineraryDay.items.map((item) => `<div class="timeline-item">${item}</div>`).join('');
   }
 
-  const totalSpent = trip.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const pendingExpenses = trip.expenses.filter((expense) => expense.pending);
+  const myExpenses = trip.expenses.filter(expense => {
+    if (!expense.participantNames) return true;
+    
+    const payerName = expense.paidBy || ''; 
+    const isPayer = payerName.trim().toLowerCase() === currentUserName.trim().toLowerCase();
+    
+    const isParticipant = expense.participantNames.map(n => (n || '').trim().toLowerCase()).includes(currentUserName.trim().toLowerCase());
+    
+    return isPayer || isParticipant; 
+  });
+
+  const totalSpent = myExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const pendingExpenses = myExpenses.filter((expense) => expense.pending);
+  
   if($('#group-total-spent')) $('#group-total-spent').textContent = formatCurrency(totalSpent);
   if($('#pending-balance-count')) $('#pending-balance-count').textContent = `${pendingExpenses.length} pending`;
 
   if($('#member-list-inline')) {
     $('#member-list-inline').innerHTML = trip.members.map((member) => {
-      const isMe = member.trim().toLowerCase() === currentUserName.trim().toLowerCase();
+      const isMe = (member || '').trim().toLowerCase() === currentUserName.trim().toLowerCase();
       
       return `
         <div class="member-row">
@@ -560,12 +585,12 @@ function renderTripDetail() {
 
   const expList = $('#expense-list');
   if (expList) {
-    expList.innerHTML = trip.expenses.length ? trip.expenses.map((expense) => `
+    expList.innerHTML = myExpenses.length ? myExpenses.map((expense) => `
       <div class="expense-item ${expense.pending ? 'pending' : 'settled'}">
         <div class="row-between">
           <div>
             <strong>${expense.title}</strong>
-            <div class="expense-note">Split between ${expense.participants} people</div>
+            <div class="expense-note">Split between ${expense.participants} people (${expense.paidBy} paid)</div>
           </div>
           <div class="expense-amount">€${Number(expense.amount).toFixed(2)}</div>
         </div>
@@ -591,40 +616,46 @@ function renderTripDetail() {
   if($('#trip-tab-expenses')) $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
 }
 
+function markExpensePaid(tripId, expenseId) {
+  const trip = state.trips.find((item) => item.id === tripId);
+  const expense = trip?.expenses.find((item) => item.id === expenseId);
+  if (expense) { 
+    expense.pending = false; 
+  }
+  
+  if (trip && trip.pendingActions) {
+    trip.pendingActions = trip.pendingActions.filter(action => !(action.type === 'expense' && action.expenseId === expenseId));
+  }
 
-// Função auxiliar para formatar os nomes: ["João", "Sofia", "Tomás"] -> "João, Sofia e Tomás"
+  saveTripsToStorage();
+  render();
+}
+
 function formatInvitedNames(names) {
   if (!names || names.length === 0) return "";
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} e ${names[1]}`;
-  
-  // Faz uma cópia para não alterar o array original
+
   const namesCopy = [...names];
   const last = namesCopy.pop();
   return `${namesCopy.join(', ')} e ${last}`;
 }
 
-// Cria a notificação (Toast) na interface com o contador (Posicionada no Topo)
 function showTripNotification(invitedUsers) {
-  // 1. Limpa notificações antigas
   const existing = document.getElementById('trip-notification');
   if (existing) existing.remove();
 
-  // 2. Constrói a mensagem
-  let message = "Viagem criada com sucesso!";
+  let message = "Trip created successfully!";
   if (invitedUsers && invitedUsers.length > 0) {
     const namesText = formatInvitedNames(invitedUsers);
-    message = `Viagem criada e convites para ${namesText} enviados com sucesso!`;
+    message = `Trip created and invites sent to ${namesText} successfully!`;
   }
 
-  // 3. Descobre o ecrã atual onde estamos
   const activeScreen = document.querySelector('.screen.active') || document.body;
 
-  // 4. Cria a caixa
   const notifBox = document.createElement('div');
   notifBox.id = 'trip-notification';
-  
-  // CSS Alterado: Agora usa 'top' em vez de 'bottom' e margem de 80px para ficar abaixo do logo
+
   notifBox.style.cssText = `
     position: absolute;
     top: 80px; /* Alinhado no topo, logo abaixo do cabeçalho da app */
@@ -670,7 +701,6 @@ function showTripNotification(invitedUsers) {
   
   activeScreen.appendChild(notifBox);
 
-  // 5. Lógica do Temporizador (10s até 0s)
   let timeLeft = 10;
   timerSpan.innerText = `${timeLeft}s`;
 
@@ -686,7 +716,6 @@ function showTripNotification(invitedUsers) {
   }, 1000);
 }
 
-// NOVA FUNÇÃO: Processa a resposta ao convite inicial
 function respondToInvite(accepted) {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -698,32 +727,55 @@ function respondToInvite(accepted) {
       trip.acceptedMembers.push(currentUserName);
     }
 
-    // Retira do aviso "Trip Invitation"
     const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
     if (inviteAction && inviteAction.targetUsers) {
       inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
     }
 
-    // Coloca no aviso "Voting in progress"
-    let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
-    if (voteAction) {
-      if (!voteAction.targetUsers) voteAction.targetUsers = [];
-      voteAction.targetUsers.push(currentUserName);
+    if (trip.votesConfirmed) {
+        if (!trip.participationConfirmed) trip.participationConfirmed = [];
+        if (!trip.participationConfirmed.includes(currentUserName)) {
+            trip.participationConfirmed.push(currentUserName);
+        }
+    } else {
+        let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
+        if (voteAction) {
+          if (!voteAction.targetUsers) voteAction.targetUsers = [];
+          if (!voteAction.targetUsers.includes(currentUserName)) {
+              voteAction.targetUsers.push(currentUserName);
+          }
+        }
     }
+
+    if (!trip.toastEvents) trip.toastEvents = [];
+    trip.toastEvents.push({
+      id: Date.now(),
+      type: 'INVITE_ACCEPTED',
+      message: `O ${currentUserName} joined the trip "${trip.name}".`,
+      targetUsers: trip.members.filter(m => m !== currentUserName), 
+      notifiedUsers: []
+    });
 
     saveTripsToStorage();
     render();
   } else {
     if (confirm('Are you sure you want to decline this invitation?')) {
-      // Remove do grupo
       trip.members = trip.members.filter(m => m !== currentUserName);
       
-      // Remove do aviso
       const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
       if (inviteAction && inviteAction.targetUsers) {
         inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
       }
       
+      if (!trip.toastEvents) trip.toastEvents = [];
+      trip.toastEvents.push({
+        id: Date.now(),
+        type: 'INVITE_DECLINED',
+        message: `O ${currentUserName} declined the invite to "${trip.name}".`,
+        targetUsers: [...trip.members],
+        notifiedUsers: []
+      });
+
       saveTripsToStorage();
       setScreen('home');
       render();
@@ -740,7 +792,6 @@ function showActionToast(message, isError = false) {
   const notifBox = document.createElement('div');
   notifBox.id = 'action-toast';
   
-  // Se for erro (recusado), fica vermelho (#d32f2f). Se for sucesso (aceite), fica verde (#2e7d32).
   const bgColor = isError ? '#d32f2f' : '#2e7d32';
 
   notifBox.style.cssText = `
@@ -806,14 +857,12 @@ function showActionToast(message, isError = false) {
 function checkAndShowInvitePopup() {
   const currentUserName = state.currentUser?.name || 'User';
   
-  // Procura uma viagem onde o utilizador tenha um convite pendente
   const pendingTrip = state.trips.find(trip =>
     trip.pendingActions?.some(a => a.type === 'invite' && a.targetUsers?.includes(currentUserName))
   );
 
-  if (!pendingTrip) return; // Se não houver convites, não faz nada
+  if (!pendingTrip) return;
 
-  // Evita abrir múltiplos popups
   if (document.getElementById('invite-popup-overlay')) return;
 
   const overlay = document.createElement('div');
@@ -831,17 +880,16 @@ function checkAndShowInvitePopup() {
     text-align: center; position: relative; overflow: hidden;
   `;
 
-  // --- VISTA 1: O CONVITE PRINCIPAL ---
   function renderMainView() {
     popup.innerHTML = `
       <div style="font-size: 3rem; margin-bottom: 12px;">💌</div>
       <h3 style="margin: 0 0 12px; color: #1e293b; font-size: 1.2rem;">
-        Foi convidado para participar na viagem ${pendingTrip.name}
+        You have been invited to join the trip ${pendingTrip.name}
       </h3>
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        <button class="primary-btn" id="btn-aceitar" style="width: 100%;">Aceitar</button>
-        <button class="danger-btn" id="btn-recusar" style="width: 100%; background: #fff1f1; color: var(--danger);">Recusar</button>
-        <button class="secondary-btn" id="btn-detalhes" style="width: 100%; background: #f1f5f9; color: #475569; border: none;">Ver detalhes da viagem</button>
+        <button class="primary-btn" id="btn-aceitar" style="width: 100%;">Accept</button>
+        <button class="danger-btn" id="btn-recusar" style="width: 100%; background: #fff1f1; color: var(--danger);">Decline</button>
+        <button class="secondary-btn" id="btn-detalhes" style="width: 100%; background: #f1f5f9; color: #475569; border: none;">View trip details</button>
       </div>
     `;
 
@@ -850,23 +898,21 @@ function checkAndShowInvitePopup() {
     popup.querySelector('#btn-detalhes').onclick = renderDetailsView;
   }
 
-  // --- VISTA 2: OS DETALHES (Com a setinha para trás) ---
   function renderDetailsView() {
     popup.innerHTML = `
-      <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 1.2rem;">Detalhes da Viagem</h3>
+      <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 1.2rem;">Trip Details</h3>
       <div style="text-align: left; background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.95rem; color: #334155;">
-        <p style="margin: 0 0 8px;"><strong>Destino:</strong> ${pendingTrip.destination || 'Por decidir'}</p>
-        <p style="margin: 0 0 8px;"><strong>Criador:</strong> ${pendingTrip.creator}</p>
-        <p style="margin: 0 0 8px;"><strong>Datas:</strong> ${pendingTrip.start} a ${pendingTrip.end}</p>
-        <p style="margin: 0;"><strong>Orçamento médio:</strong> €${pendingTrip.budget || 0}</p>
+        <p style="margin: 0 0 8px;"><strong>Destination:</strong> ${pendingTrip.destination || 'To be decided'}</p>
+        <p style="margin: 0 0 8px;"><strong>Creator:</strong> ${pendingTrip.creator}</p>
+        <p style="margin: 0 0 8px;"><strong>Dates:</strong> ${pendingTrip.start} to ${pendingTrip.end}</p>
+        <p style="margin: 0;"><strong>Average Budget:</strong> €${pendingTrip.budget || 0}</p>
       </div>
-      <button class="secondary-btn" id="btn-voltar" style="width: 100%;">⬅ Voltar</button>
+      <button class="secondary-btn" id="btn-voltar" style="width: 100%;">⬅ Back</button>
     `;
     popup.querySelector('#btn-voltar').onclick = renderMainView;
   }
 
   function processInvite(accepted) {
-    // 1. Garante que operamos sobre o dado mais recente
     const trip = state.trips.find(t => t.id === pendingTrip.id);
     if (!trip) return;
 
@@ -876,40 +922,60 @@ function checkAndShowInvitePopup() {
         trip.acceptedMembers.push(currentUserName);
       }
 
-      // Limpa o convite
       const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
       if (inviteAction && inviteAction.targetUsers) {
           inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
       }
 
-      // Adiciona ao voto
-      let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
-      if (voteAction && !voteAction.targetUsers.includes(currentUserName)) {
-        voteAction.targetUsers.push(currentUserName);
+      if (trip.votesConfirmed) {
+          if (!trip.participationConfirmed) trip.participationConfirmed = [];
+          if (!trip.participationConfirmed.includes(currentUserName)) {
+              trip.participationConfirmed.push(currentUserName);
+          }
+      } else {
+          let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
+          if (voteAction && !voteAction.targetUsers.includes(currentUserName)) {
+            voteAction.targetUsers.push(currentUserName);
+          }
       }
+
+      if (!trip.toastEvents) trip.toastEvents = [];
+      trip.toastEvents.push({
+        id: Date.now(),
+        type: 'INVITE_ACCEPTED',
+        message: `O ${currentUserName} joined the trip "${trip.name}".`,
+        targetUsers: trip.members.filter(m => m !== currentUserName),
+        notifiedUsers: []
+      });
+
     } else {
-      // Lógica de recusa mantida...
       trip.members = trip.members.filter(m => m !== currentUserName);
       trip.votesTotal = Math.max(1, (trip.votesTotal || 1) - 1);
       const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
       if (inviteAction) inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
+
+      if (!trip.toastEvents) trip.toastEvents = [];
+      trip.toastEvents.push({
+        id: Date.now(),
+        type: 'INVITE_DECLINED',
+        message: `O ${currentUserName} declined the invite to "${trip.name}".`,
+        targetUsers: [...trip.members],
+        notifiedUsers: []
+      });
     }
 
-    // 2. Grava e atualiza o estado localmente antes de disparar eventos
     saveTripsToStorage();
     
-    // 3. Fecha o overlay ANTES de qualquer re-render
     const overlay = document.getElementById('invite-popup-overlay');
     if (overlay) overlay.remove();
     
-    // 4. Força o update imediato nesta aba
     render(); 
     
     if (accepted) {
       setScreen('trip-detail');
-      showActionToast(`Bem vindo à viagem ${trip.name}`);
+      showActionToast(`Welcome to ${trip.name}`);
     } else {
-      showActionToast(`Convite recusado`, true);
+      showActionToast(`Invite declined`, true);
     }
   }
 
@@ -918,7 +984,6 @@ function checkAndShowInvitePopup() {
   document.body.appendChild(overlay);
 }
 
-// ATUALIZAR FUNÇÃO DE VOTO: Para usar o "type: 'vote'" na pesquisa de avisos
 function confirmVotes(confirmed) {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -965,7 +1030,6 @@ function confirmVotes(confirmed) {
       trip.missingItem = 'Confirmations';
       
     } else {
-      // Usa .find para retirar o aviso de quem acabou de votar
       const action = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
       if (action && action.targetUsers) {
         action.targetUsers = action.targetUsers.filter(u => u !== currentUserName);
@@ -982,7 +1046,6 @@ function confirmVotes(confirmed) {
   }
 }
 
-// ─── SUGESTÕES / SWIPE ────────────────────────────────────────────────────────
 function renderSuggestions() {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -1208,14 +1271,13 @@ function confirmVotes(confirmed) {
         nowNextTitle: 'Votes confirmed!',
         items: [`✅ Destination: ${winner.city}`]
       }];
-      
-      // NOVA LÓGICA TAREFA 4: Criar o aviso para toda a gente confirmar se vai!
-      trip.participationConfirmed = []; // Começa vazio
+
+      trip.participationConfirmed = []; 
       trip.pendingActions = [{
         title: 'Confirm presence',
         description: `Destination decided: ${winner.city}. Are you still going?`,
         cta: 'Confirm now',
-        targetUsers: [...trip.members] // Todos os membros recebem o aviso
+        targetUsers: [...trip.members]
       }];
       trip.missingItem = 'Confirmations';
       
@@ -1251,8 +1313,7 @@ function confirmParticipation(isGoing) {
     if (action && action.targetUsers) {
       action.targetUsers = action.targetUsers.filter(u => u !== currentUserName);
     }
-    
-    // Se todos já confirmaram, limpa os avisos da viagem
+
     if (trip.participationConfirmed.length === trip.members.length) {
         trip.pendingActions = [];
         trip.missingItem = '';
@@ -1274,6 +1335,15 @@ function confirmParticipation(isGoing) {
           trip.pendingActions = [];
           trip.missingItem = '';
       }
+
+      if (!trip.toastEvents) trip.toastEvents = [];
+      trip.toastEvents.push({
+        id: Date.now(),
+        type: 'MEMBER_LEFT',
+        message: `O ${currentUserName} left the trip "${trip.name}".`,
+        targetUsers: trip.members.filter(m => m !== currentUserName), 
+        notifiedUsers: []
+      });
       
       saveTripsToStorage();
       setScreen('home');
@@ -1292,7 +1362,6 @@ function resetVotes() {
   renderSuggestions();
 }
 
-// ─── RESTO DAS FUNÇÕES ────────────────────────────────────────────────────────
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1352,6 +1421,7 @@ function render() {
   if($('#duration-value')) $('#duration-value').textContent = state.createTripDuration;
 
   checkAndShowVotingDoneNotification();
+  checkAndShowToastEvents();
 }
 
 function openTrip(id) {
@@ -1370,7 +1440,41 @@ function openTripFromAction(id) { openTrip(id); }
 function markExpensePaid(tripId, expenseId) {
   const trip = state.trips.find((item) => item.id === tripId);
   const expense = trip?.expenses.find((item) => item.id === expenseId);
-  if (expense) { expense.pending = false; expense.owedAmount = 0; }
+  const currentUserName = state.currentUser?.name || 'Alguém';
+
+  if (expense) { 
+    expense.pending = false; 
+    expense.owedAmount = 0; 
+
+    if (!trip.toastEvents) trip.toastEvents = [];
+    
+    let targets = [];
+
+    if (expense.paidBy && expense.paidBy !== currentUserName) {
+      targets.push(expense.paidBy);
+    }
+
+    if (expense.participantNames) {
+      expense.participantNames.forEach(m => {
+        if (m !== currentUserName && !targets.includes(m)) {
+          targets.push(m);
+        }
+      });
+    }
+
+    trip.toastEvents.push({
+      id: Date.now(),
+      type: 'EXPENSE_PAID',
+      message: ` ${currentUserName} has paid for "${expense.title}". The matter is resolved! ✅`,
+      targetUsers: targets,
+      notifiedUsers: []
+    });
+  }
+
+  if (trip && trip.pendingActions) {
+    trip.pendingActions = trip.pendingActions.filter(action => !(action.type === 'expense' && action.expenseId === expenseId));
+  }
+
   saveTripsToStorage();
   render();
 }
@@ -1380,18 +1484,15 @@ function removeMember(memberName) {
   if (!trip) return;
   
   const currentUserName = state.currentUser?.name || 'You';
-  
-  // Dupla proteção de segurança: Garante que só podes remover a ti próprio!
+
   if (memberName.trim().toLowerCase() !== currentUserName.trim().toLowerCase()) {
     alert("Security error: You can only remove yourself from this trip.");
     return;
   }
   
   if (confirm('Are you sure you want to leave this trip? You will lose access to it.')) {
-    // 1. Remove o utilizador atual da lista de membros
     trip.members = trip.members.filter((m) => m.trim().toLowerCase() !== currentUserName.trim().toLowerCase());
     
-    // 2. Remove o utilizador de quaisquer ações pendentes (para limpar os avisos)
     if (trip.pendingActions) {
       trip.pendingActions.forEach(action => {
         if (action.targetUsers) {
@@ -1400,7 +1501,15 @@ function removeMember(memberName) {
       });
     }
     
-    // 3. Grava as alterações e manda a pessoa para a página inicial
+    if (!trip.toastEvents) trip.toastEvents = [];
+    trip.toastEvents.push({
+      id: Date.now(),
+      type: 'MEMBER_LEFT',
+      message: ` ${currentUserName} left the trip "${trip.name}".`,
+      targetUsers: trip.members.filter(m => m !== currentUserName), 
+      notifiedUsers: []
+    });
+
     saveTripsToStorage();
     setScreen('home');
     render();
@@ -1411,19 +1520,38 @@ function createTrip() {
   const nameInput = $('#trip-name');
   const destinationInput = $('#trip-destination');
   const budgetInput = $('#trip-budget');
+  const startDateInput = $('#trip-start-date'); 
+  const endDateInput = $('#trip-end-date');    
 
   const name = nameInput?.value.trim();
   const destination = destinationInput?.value.trim();
   const budget = Number(budgetInput?.value || 0);
+  const startVal = startDateInput?.value;    
+  const endVal = endDateInput?.value;        
   
   const myName = state.currentUser ? state.currentUser.name : 'You';
   const checkedBoxes = $$('#trip-contact-list input[type="checkbox"]:checked');
   const members = [myName, ...checkedBoxes.map(cb => cb.value)];
 
-  if (!name || !destination) { 
-    alert('Please fill in the name and destination.'); 
+  if (!name || !destination || !startVal || !endVal) { 
+    alert('Please fill in the name, destination, and select the dates.'); 
     return; 
   }
+
+  const startObj = new Date(startVal);
+  const endObj = new Date(endVal);
+  
+  if (endObj < startObj) {
+    alert('A data de fim não pode ser antes da data de início.');
+    return;
+  }
+
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const formattedStart = `${startObj.getDate()} ${months[startObj.getMonth()]}`;
+  const formattedEnd = `${endObj.getDate()} ${months[endObj.getMonth()]}`;
+
+  const diffTime = Math.abs(endObj - startObj);
+  const calculatedDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
 
   const vTotal = members.length; 
   const vCompleted = 1; 
@@ -1436,13 +1564,13 @@ function createTrip() {
     creator: myName, 
     destination: destination,
     city: 'TBD', 
-    start: '12 Ago',
-    end: '16 Ago',
-    durationDays: state.createTripDuration,
+    start: formattedStart,       
+    end: formattedEnd,           
+    durationDays: calculatedDuration, 
     budget: budget,
     status: 'planning',
     members: members,
-    acceptedMembers: [myName], // NOVO: Só o criador está confirmado no início
+    acceptedMembers: [myName],
     votesCompleted: vCompleted, 
     votesTotal: vTotal,
     votedMembers: [myName],
@@ -1461,14 +1589,14 @@ function createTrip() {
         title: 'Trip Invitation', 
         description: `${myName} invited you to join ${name}.`, 
         cta: 'Respond',
-        targetUsers: invitedMembers, // Convite vai para os outros
+        targetUsers: invitedMembers, 
         type: 'invite'
       },
       { 
         title: 'Voting in progress', 
         description: `Your vote is needed to decide the destination of ${name}.`, 
         cta: 'Go vote now',
-        targetUsers: [], // Vazio no início, só entra quem aceitar o convite!
+        targetUsers: [], 
         type: 'vote'
       }
     ],
@@ -1485,20 +1613,21 @@ function createTrip() {
   state.currentTripId = newTrip.id;
   
   closeModal('modal-create-trip');
+
   if(nameInput) nameInput.value = '';
   if(destinationInput) destinationInput.value = '';
   if(budgetInput) budgetInput.value = '';
+  if(startDateInput) startDateInput.value = ''; 
+  if(endDateInput) endDateInput.value = '';     
   
   $$('#trip-contact-list input[type="checkbox"]').forEach(cb => {
     if (['Tomás', 'Sofia', 'Nuno'].includes(cb.value)) cb.checked = true;
     else cb.checked = false;
   });
   
-  // 1. Primeiro atualiza o render e muda para o ecrã Home
   render();
   setScreen('home'); 
 
-  // 2. SÓ AGORA chamas a notificação (assim o ecrã Home já está ativo e ela aparece lá dentro!)
   showTripNotification(invitedMembers);
 }
 
@@ -1517,6 +1646,7 @@ function saveExpense() {
   }
 
   let participantsCount = trip.members.length;
+  let participantNames = [...trip.members];
 
   if (splitType === 'custom') {
     const checkedBoxes = $$('#expense-custom-members input[type="checkbox"]:checked');
@@ -1525,19 +1655,44 @@ function saveExpense() {
       alert('Selecione pelo menos um participante para dividir a despesa.');
       return;
     }
+    participantNames = checkedBoxes.map(cb => cb.value); 
   }
 
   const owedPerPerson = total / participantsCount;
+  const expenseId = Date.now();
 
   trip.expenses.unshift({
-    id: Date.now(),
+    id: expenseId,
     title: description,
     amount: total,
     paidBy: payer,
     owedPerPerson: owedPerPerson,
     participants: participantsCount,
+    participantNames: participantNames,
     pending: true
   });
+
+  const debtors = participantNames.filter(name => name.trim().toLowerCase() !== payer.trim().toLowerCase());
+  if (debtors.length > 0) {
+    if (!trip.pendingActions) trip.pendingActions = [];
+    trip.pendingActions.push({
+      title: 'Pending Expense',
+      description: `${payer} added "${description}". You owe €${owedPerPerson.toFixed(2)}.`,
+      cta: 'Go to trip',
+      targetUsers: debtors, 
+      type: 'expense',
+      expenseId: expenseId
+    });
+
+    if (!trip.toastEvents) trip.toastEvents = [];
+    trip.toastEvents.push({
+      id: Date.now(),
+      type: 'NEW_EXPENSE',
+      message: `New €${owedPerPerson.toFixed(2)} to ${payer} for "${description}".`,
+      targetUsers: debtors, 
+      notifiedUsers: []
+    });
+  }
 
   if ($('#expense-description')) $('#expense-description').value = '';
   if ($('#expense-total')) $('#expense-total').value = '';
@@ -1586,7 +1741,6 @@ function deleteTrip(event, id) {
   }
 }
 
-// Fechar Viagem
 function closeCurrentTrip() {
   const trip = getCurrentTrip();
   if (!trip) return;
@@ -1614,17 +1768,60 @@ function closeCurrentTrip() {
 function saveMember() {
   const trip = getCurrentTrip();
   if (!trip) return;
-  const name = $('#member-name')?.value.trim();
   const includePrevious = $('#include-previous-expenses')?.value === 'yes';
-  if (!name) { alert('Please enter a member name.'); return; }
-  if (!trip.members.includes(name)) trip.members.push(name);
-  if (includePrevious) {
-    trip.expenses.forEach((expense) => { expense.participants += 1; if (expense.pending) expense.owedAmount = Number(expense.amount) / expense.participants; });
+  
+  const checkedBoxes = $$('#add-member-contact-list input[type="checkbox"]:checked');
+  const selectedNames = checkedBoxes.map(cb => cb.value);
+  
+  if (selectedNames.length === 0) { 
+    alert('Please select at least one member to invite.'); 
+    return; 
   }
-  if($('#member-name')) $('#member-name').value = '';
+  
+  selectedNames.forEach(name => {
+    if (!trip.members.includes(name)) {
+      trip.members.push(name);
+      
+      let inviteAction = trip.pendingActions.find(a => a.type === 'invite');
+      if (!inviteAction) {
+        inviteAction = { 
+          title: 'Trip Invitation', 
+          description: `${state.currentUser?.name || 'Someone'} invited you to join ${trip.name}.`, 
+          cta: 'Respond',
+          targetUsers: [],
+          type: 'invite'
+        };
+        trip.pendingActions.push(inviteAction);
+      }
+      if (!inviteAction.targetUsers.includes(name)) {
+        inviteAction.targetUsers.push(name);
+      }
+    }
+  });
+  
+  if (includePrevious) {
+    trip.expenses.forEach((expense) => { 
+      expense.participants += selectedNames.length; 
+      if (expense.pending) expense.owedAmount = Number(expense.amount) / expense.participants; 
+    });
+  }
+
+  if (!trip.toastEvents) trip.toastEvents = [];
+  trip.toastEvents.push({
+    id: Date.now(),
+    type: 'MEMBER_JOINED',
+    message: `${selectedNames.join(' and ')} was invited to the trip "${trip.name}".`,
+    targetUsers: trip.members.filter(m => !selectedNames.includes(m)),
+    notifiedUsers: []
+  });
+  
   if($('#include-previous-expenses')) $('#include-previous-expenses').value = 'no';
   closeModal('modal-add-member');
+  
+  saveTripsToStorage(); 
   render();
+  
+  showActionToast(`Invite sent to ${selectedNames.join(', ')}`); 
 }
 
 function saveTripsToStorage() {
@@ -1655,7 +1852,33 @@ safeListen('#duration-plus', 'click', () => { state.createTripDuration += 1; ren
 safeListen('#open-suggestions', 'click', () => setScreen('suggestions'));
 safeListen('#open-add-expense-inline', 'click', () => openModal('modal-add-expense'));
 safeListen('#save-expense-btn', 'click', saveExpense);
-safeListen('#open-add-member', 'click', () => openModal('modal-add-member'));
+safeListen('#open-add-member', 'click', () => {
+  renderAvailableMembersToInvite();
+  openModal('modal-add-member');
+});
+
+function renderAvailableMembersToInvite() {
+  const trip = getCurrentTrip();
+  if (!trip) return;
+
+  const allContacts = ['João', 'Ricardo', 'Tomás', 'Sofia', 'Nuno', 'Leonor'];
+  
+  const currentMembersLower = trip.members.map(m => m.trim().toLowerCase());
+  const available = allContacts.filter(name => !currentMembersLower.includes(name.trim().toLowerCase()));
+
+  const container = $('#add-member-contact-list');
+  if (container) {
+    if (available.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="font-size:0.85rem;">All contacts are already in this trip!</div>';
+    } else {
+      container.innerHTML = available.map(name => `
+        <label class="checkbox-item">
+          <input type="checkbox" value="${name}"> ${name}
+        </label>
+      `).join('');
+    }
+  }
+}
 safeListen('#save-member-btn', 'click', saveMember);
 safeListen('#expense-split', 'change', (event) => {
   const customGroup = $('#expense-custom-count-group');
@@ -1666,9 +1889,8 @@ safeListen('#register-submit', 'click', register);
 safeListen('#logout-btn', 'click', logout);
 safeListen('#open-add-suggestion', 'click', () => openModal('modal-add-suggestion'));
 safeListen('#save-suggestion-btn', 'click', saveSuggestion);
-safeListen('#trip-finish-btn', 'click', closeCurrentTrip); // LIGADO!
+safeListen('#trip-finish-btn', 'click', closeCurrentTrip);
 
-// MAGIA: Sincronização de abas em tempo real
 window.addEventListener('storage', (event) => {
   if (event.key === 'swipetravel.trips') {
     state.trips = readJSON('swipetravel.trips', []);
