@@ -273,6 +273,7 @@ function renderHome() {
   
   const homeTripList = $('#home-trip-list');
   if(homeTripList) homeTripList.innerHTML = myTrips.map(renderTripCard).join('');
+  checkAndShowInvitePopup();
 }
 
 function renderTripCard(trip) {
@@ -301,6 +302,102 @@ function renderTripCard(trip) {
       </div>
     </div>
   `;
+}
+
+
+// Função que desenha o Toast de Fim de Votação com contador de 10s
+function showVotingDoneToast(message) {
+  const existing = document.getElementById('voting-done-toast');
+  if (existing) existing.remove();
+
+  const activeScreen = document.querySelector('.screen.active') || document.body;
+  const notifBox = document.createElement('div');
+  notifBox.id = 'voting-done-toast';
+  
+  // Cor azul informativa (#0284c7) para destacar que é uma mudança de fase
+  notifBox.style.cssText = `
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    box-sizing: border-box;
+    background-color: #0284c7; 
+    color: white;
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: inherit;
+    font-size: 13px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: opacity 0.3s ease;
+  `;
+
+  if (window.getComputedStyle(activeScreen).position === 'static') {
+    activeScreen.style.position = 'relative';
+  }
+
+  const textSpan = document.createElement('span');
+  textSpan.innerText = message;
+  textSpan.style.flex = "1";
+
+  const timerSpan = document.createElement('span');
+  timerSpan.style.cssText = `
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  `;
+
+  notifBox.appendChild(textSpan);
+  notifBox.appendChild(timerSpan);
+  activeScreen.appendChild(notifBox);
+
+  let timeLeft = 10;
+  timerSpan.innerText = `${timeLeft}s`;
+
+  const interval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft > 0) {
+      timerSpan.innerText = `${timeLeft}s`;
+    } else {
+      clearInterval(interval);
+      notifBox.style.opacity = '0';
+      setTimeout(() => notifBox.remove(), 300);
+    }
+  }, 1000);
+}
+
+// Verifica se a viagem do utilizador atual terminou a votação e mostra o Toast
+function checkAndShowVotingDoneNotification() {
+  const currentUserName = state.currentUser?.name;
+  if (!currentUserName) return;
+
+  const finishedTrip = state.trips.find(trip => {
+    const isMember = trip.acceptedMembers?.includes(currentUserName);
+    
+    // CORREÇÃO: Em vez de comparar arrays, olhamos para a flag oficial de fim de votação!
+    const isVotingPhaseOver = trip.votesConfirmed === true;
+
+    if (!trip.notifiedVotingDone) trip.notifiedVotingDone = [];
+    const alreadyNotified = trip.notifiedVotingDone.includes(currentUserName);
+
+    return isMember && isVotingPhaseOver && !alreadyNotified;
+  });
+
+  if (!finishedTrip) return;
+
+  // Regista imediatamente que este utilizador já foi notificado
+  finishedTrip.notifiedVotingDone.push(currentUserName);
+  saveTripsToStorage();
+
+  showVotingDoneToast("Vote phase is done!! Go to itenerary and vote to stay or leave");
 }
 
 function renderTrips() {
@@ -494,6 +591,101 @@ function renderTripDetail() {
   if($('#trip-tab-expenses')) $('#trip-tab-expenses').classList.toggle('hidden', state.detailTab !== 'expenses');
 }
 
+
+// Função auxiliar para formatar os nomes: ["João", "Sofia", "Tomás"] -> "João, Sofia e Tomás"
+function formatInvitedNames(names) {
+  if (!names || names.length === 0) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} e ${names[1]}`;
+  
+  // Faz uma cópia para não alterar o array original
+  const namesCopy = [...names];
+  const last = namesCopy.pop();
+  return `${namesCopy.join(', ')} e ${last}`;
+}
+
+// Cria a notificação (Toast) na interface com o contador (Posicionada no Topo)
+function showTripNotification(invitedUsers) {
+  // 1. Limpa notificações antigas
+  const existing = document.getElementById('trip-notification');
+  if (existing) existing.remove();
+
+  // 2. Constrói a mensagem
+  let message = "Viagem criada com sucesso!";
+  if (invitedUsers && invitedUsers.length > 0) {
+    const namesText = formatInvitedNames(invitedUsers);
+    message = `Viagem criada e convites para ${namesText} enviados com sucesso!`;
+  }
+
+  // 3. Descobre o ecrã atual onde estamos
+  const activeScreen = document.querySelector('.screen.active') || document.body;
+
+  // 4. Cria a caixa
+  const notifBox = document.createElement('div');
+  notifBox.id = 'trip-notification';
+  
+  // CSS Alterado: Agora usa 'top' em vez de 'bottom' e margem de 80px para ficar abaixo do logo
+  notifBox.style.cssText = `
+    position: absolute;
+    top: 80px; /* Alinhado no topo, logo abaixo do cabeçalho da app */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    box-sizing: border-box;
+    background-color: #2e7d32;
+    color: white;
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: inherit;
+    font-size: 13px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: opacity 0.3s ease;
+  `;
+
+  if (window.getComputedStyle(activeScreen).position === 'static') {
+    activeScreen.style.position = 'relative';
+  }
+
+  const textSpan = document.createElement('span');
+  textSpan.innerText = message;
+  textSpan.style.flex = "1";
+
+  const timerSpan = document.createElement('span');
+  timerSpan.style.cssText = `
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  `;
+
+  notifBox.appendChild(textSpan);
+  notifBox.appendChild(timerSpan);
+  
+  activeScreen.appendChild(notifBox);
+
+  // 5. Lógica do Temporizador (10s até 0s)
+  let timeLeft = 10;
+  timerSpan.innerText = `${timeLeft}s`;
+
+  const interval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft > 0) {
+      timerSpan.innerText = `${timeLeft}s`;
+    } else {
+      clearInterval(interval);
+      notifBox.style.opacity = '0';
+      setTimeout(() => notifBox.remove(), 300);
+    }
+  }, 1000);
+}
+
 // NOVA FUNÇÃO: Processa a resposta ao convite inicial
 function respondToInvite(accepted) {
   const trip = getCurrentTrip();
@@ -537,6 +729,193 @@ function respondToInvite(accepted) {
       render();
     }
   }
+}
+
+
+function showActionToast(message, isError = false) {
+  const existing = document.getElementById('action-toast');
+  if (existing) existing.remove();
+
+  const activeScreen = document.querySelector('.screen.active') || document.body;
+  const notifBox = document.createElement('div');
+  notifBox.id = 'action-toast';
+  
+  // Se for erro (recusado), fica vermelho (#d32f2f). Se for sucesso (aceite), fica verde (#2e7d32).
+  const bgColor = isError ? '#d32f2f' : '#2e7d32';
+
+  notifBox.style.cssText = `
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    box-sizing: border-box;
+    background-color: ${bgColor};
+    color: white;
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: inherit;
+    font-size: 13px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: opacity 0.3s ease;
+  `;
+
+  if (window.getComputedStyle(activeScreen).position === 'static') {
+    activeScreen.style.position = 'relative';
+  }
+
+  const textSpan = document.createElement('span');
+  textSpan.innerText = message;
+  textSpan.style.flex = "1";
+
+  const timerSpan = document.createElement('span');
+  timerSpan.style.cssText = `
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  `;
+
+  notifBox.appendChild(textSpan);
+  notifBox.appendChild(timerSpan);
+  activeScreen.appendChild(notifBox);
+
+  let timeLeft = 10;
+  timerSpan.innerText = `${timeLeft}s`;
+
+  const interval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft > 0) {
+      timerSpan.innerText = `${timeLeft}s`;
+    } else {
+      clearInterval(interval);
+      notifBox.style.opacity = '0';
+      setTimeout(() => notifBox.remove(), 300);
+    }
+  }, 1000);
+}
+
+
+function checkAndShowInvitePopup() {
+  const currentUserName = state.currentUser?.name || 'User';
+  
+  // Procura uma viagem onde o utilizador tenha um convite pendente
+  const pendingTrip = state.trips.find(trip =>
+    trip.pendingActions?.some(a => a.type === 'invite' && a.targetUsers?.includes(currentUserName))
+  );
+
+  if (!pendingTrip) return; // Se não houver convites, não faz nada
+
+  // Evita abrir múltiplos popups
+  if (document.getElementById('invite-popup-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'invite-popup-overlay';
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+  `;
+
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    background: white; width: 85%; max-width: 350px;
+    border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center; position: relative; overflow: hidden;
+  `;
+
+  // --- VISTA 1: O CONVITE PRINCIPAL ---
+  function renderMainView() {
+    popup.innerHTML = `
+      <div style="font-size: 3rem; margin-bottom: 12px;">💌</div>
+      <h3 style="margin: 0 0 12px; color: #1e293b; font-size: 1.2rem;">
+        Foi convidado para participar na viagem ${pendingTrip.name}
+      </h3>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="primary-btn" id="btn-aceitar" style="width: 100%;">Aceitar</button>
+        <button class="danger-btn" id="btn-recusar" style="width: 100%; background: #fff1f1; color: var(--danger);">Recusar</button>
+        <button class="secondary-btn" id="btn-detalhes" style="width: 100%; background: #f1f5f9; color: #475569; border: none;">Ver detalhes da viagem</button>
+      </div>
+    `;
+
+    popup.querySelector('#btn-aceitar').onclick = () => processInvite(true);
+    popup.querySelector('#btn-recusar').onclick = () => processInvite(false);
+    popup.querySelector('#btn-detalhes').onclick = renderDetailsView;
+  }
+
+  // --- VISTA 2: OS DETALHES (Com a setinha para trás) ---
+  function renderDetailsView() {
+    popup.innerHTML = `
+      <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 1.2rem;">Detalhes da Viagem</h3>
+      <div style="text-align: left; background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.95rem; color: #334155;">
+        <p style="margin: 0 0 8px;"><strong>Destino:</strong> ${pendingTrip.destination || 'Por decidir'}</p>
+        <p style="margin: 0 0 8px;"><strong>Criador:</strong> ${pendingTrip.creator}</p>
+        <p style="margin: 0 0 8px;"><strong>Datas:</strong> ${pendingTrip.start} a ${pendingTrip.end}</p>
+        <p style="margin: 0;"><strong>Orçamento médio:</strong> €${pendingTrip.budget || 0}</p>
+      </div>
+      <button class="secondary-btn" id="btn-voltar" style="width: 100%;">⬅ Voltar</button>
+    `;
+    popup.querySelector('#btn-voltar').onclick = renderMainView;
+  }
+
+  function processInvite(accepted) {
+    // 1. Garante que operamos sobre o dado mais recente
+    const trip = state.trips.find(t => t.id === pendingTrip.id);
+    if (!trip) return;
+
+    if (accepted) {
+      if (!trip.acceptedMembers) trip.acceptedMembers = [];
+      if (!trip.acceptedMembers.includes(currentUserName)) {
+        trip.acceptedMembers.push(currentUserName);
+      }
+
+      // Limpa o convite
+      const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
+      if (inviteAction && inviteAction.targetUsers) {
+          inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
+      }
+
+      // Adiciona ao voto
+      let voteAction = trip.pendingActions.find(a => a.type === 'vote' || a.title === 'Voting in progress');
+      if (voteAction && !voteAction.targetUsers.includes(currentUserName)) {
+        voteAction.targetUsers.push(currentUserName);
+      }
+    } else {
+      // Lógica de recusa mantida...
+      trip.members = trip.members.filter(m => m !== currentUserName);
+      trip.votesTotal = Math.max(1, (trip.votesTotal || 1) - 1);
+      const inviteAction = trip.pendingActions.find(a => a.type === 'invite');
+      if (inviteAction) inviteAction.targetUsers = inviteAction.targetUsers.filter(u => u !== currentUserName);
+    }
+
+    // 2. Grava e atualiza o estado localmente antes de disparar eventos
+    saveTripsToStorage();
+    
+    // 3. Fecha o overlay ANTES de qualquer re-render
+    const overlay = document.getElementById('invite-popup-overlay');
+    if (overlay) overlay.remove();
+    
+    // 4. Força o update imediato nesta aba
+    render(); 
+    
+    if (accepted) {
+      setScreen('trip-detail');
+      showActionToast(`Bem vindo à viagem ${trip.name}`);
+    } else {
+      showActionToast(`Convite recusado`, true);
+    }
+  }
+
+  renderMainView();
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 }
 
 // ATUALIZAR FUNÇÃO DE VOTO: Para usar o "type: 'vote'" na pesquisa de avisos
@@ -971,6 +1350,8 @@ function render() {
   renderProfile();
   renderExpensePayerOptions();
   if($('#duration-value')) $('#duration-value').textContent = state.createTripDuration;
+
+  checkAndShowVotingDoneNotification();
 }
 
 function openTrip(id) {
@@ -1113,8 +1494,12 @@ function createTrip() {
     else cb.checked = false;
   });
   
+  // 1. Primeiro atualiza o render e muda para o ecrã Home
   render();
-  setScreen('home');
+  setScreen('home'); 
+
+  // 2. SÓ AGORA chamas a notificação (assim o ecrã Home já está ativo e ela aparece lá dentro!)
+  showTripNotification(invitedMembers);
 }
 
 function saveExpense() {
@@ -1286,7 +1671,7 @@ safeListen('#trip-finish-btn', 'click', closeCurrentTrip); // LIGADO!
 // MAGIA: Sincronização de abas em tempo real
 window.addEventListener('storage', (event) => {
   if (event.key === 'swipetravel.trips') {
-    state.trips = JSON.parse(event.newValue);
+    state.trips = readJSON('swipetravel.trips', []);
     render(); 
   }
 });
