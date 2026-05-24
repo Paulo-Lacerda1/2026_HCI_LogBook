@@ -275,7 +275,7 @@ function renderHome() {
 }
 
 function renderTripCard(trip) {
-  const memberCount = trip.members.length;
+  const memberCount = (trip.acceptedMembers || []).length;
   const badgeText = trip.status === 'closed' ? 'Closed' : trip.votesCompleted < trip.votesTotal ? 'Planning' : 'Ongoing';
   const badgeClass = trip.status === 'closed' ? 'closed' : trip.votesCompleted < trip.votesTotal ? 'planning' : 'progress';
   const statusLine = trip.status === 'closed' ? 'Accounts settled' : trip.missingItem ? `Missing ${trip.missingItem}` : 'Trip ready';
@@ -372,8 +372,14 @@ function showVotingDoneToast(message) {
 
 
 function checkAndShowVotingDoneNotification() {
+  const trip = getCurrentTrip();
+  if (!trip || !trip.votesConfirmed) return;
   const currentUserName = state.currentUser?.name;
   if (!currentUserName) return;
+
+  if (trip.votedMembers && !trip.votedMembers.includes(currentUserName)) {
+    return;
+  }
 
   const finishedTrip = state.trips.find(trip => {
     const isMember = trip.acceptedMembers?.includes(currentUserName);
@@ -459,7 +465,7 @@ function renderTripDetail() {
   }
 
   if($('#trip-detail-title')) $('#trip-detail-title').textContent = trip.name;
-  if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${trip.members.length} members`;
+  if($('#trip-detail-subtitle')) $('#trip-detail-subtitle').textContent = `${trip.start} to ${trip.end} • ${(trip.acceptedMembers || []).length} members`;
   if($('#vote-progress-label')) $('#vote-progress-label').textContent = `${trip.votesCompleted}/${trip.votesTotal} completed`;
 
   const votesTab = $('#trip-tab-votes');
@@ -563,7 +569,8 @@ function renderTripDetail() {
   if($('#pending-balance-count')) $('#pending-balance-count').textContent = `${pendingExpenses.length} pending`;
 
   if($('#member-list-inline')) {
-    $('#member-list-inline').innerHTML = trip.members.map((member) => {
+    const membrosVisiveis = trip.acceptedMembers || [];
+    $('#member-list-inline').innerHTML = membrosVisiveis.map((member) => {
       const isMe = (member || '').trim().toLowerCase() === currentUserName.trim().toLowerCase();
       
       return `
@@ -751,7 +758,7 @@ function respondToInvite(accepted) {
     trip.toastEvents.push({
       id: Date.now(),
       type: 'INVITE_ACCEPTED',
-      message: `O ${currentUserName} joined the trip "${trip.name}".`,
+      message: `${currentUserName} joined the trip "${trip.name}".`,
       targetUsers: trip.members.filter(m => m !== currentUserName), 
       notifiedUsers: []
     });
@@ -771,7 +778,7 @@ function respondToInvite(accepted) {
       trip.toastEvents.push({
         id: Date.now(),
         type: 'INVITE_DECLINED',
-        message: `O ${currentUserName} declined the invite to "${trip.name}".`,
+        message: `${currentUserName} declined the invite to "${trip.name}".`,
         targetUsers: [...trip.members],
         notifiedUsers: []
       });
@@ -943,7 +950,7 @@ function checkAndShowInvitePopup() {
       trip.toastEvents.push({
         id: Date.now(),
         type: 'INVITE_ACCEPTED',
-        message: `O ${currentUserName} joined the trip "${trip.name}".`,
+        message: `${currentUserName} joined the trip "${trip.name}".`,
         targetUsers: trip.members.filter(m => m !== currentUserName),
         notifiedUsers: []
       });
@@ -958,7 +965,7 @@ function checkAndShowInvitePopup() {
       trip.toastEvents.push({
         id: Date.now(),
         type: 'INVITE_DECLINED',
-        message: `O ${currentUserName} declined the invite to "${trip.name}".`,
+        message: `${currentUserName} declined the invite to "${trip.name}".`,
         targetUsers: [...trip.members],
         notifiedUsers: []
       });
@@ -1090,7 +1097,7 @@ function renderSuggestions() {
     <div class="suggestion-body">
       <div class="tag-row">
         ${(suggestion.tags || []).map(tag => `<span class="tag-chip">${tag}</span>`).join('')}
-        ${suggestion.votes > 0 ? `<span class="tag-chip" style="background: #eef2ff; color: #4f46e5; font-weight: 800;">👍 ${suggestion.votes} voto</span>` : ''}
+        ${suggestion.votes > 0 ? `<span class="tag-chip" style="background: #eef2ff; color: #4f46e5; font-weight: 800;">👍 ${suggestion.votes} vote</span>` : ''}
       </div>
       <h3>${suggestion.city}</h3>
       <p class="muted">${suggestion.subtitle}</p>
@@ -1325,6 +1332,12 @@ function confirmParticipation(isGoing) {
     if (confirm('Are you sure you want to leave this trip? You will be removed from the group and won\'t have access to the plans.')) {
       
       trip.members = trip.members.filter(m => m !== currentUserName);
+      if (trip.acceptedMembers) {
+          trip.acceptedMembers = trip.acceptedMembers.filter(m => m !== currentUserName);
+      }
+      if (trip.participationConfirmed) {
+          trip.participationConfirmed = trip.participationConfirmed.filter(m => m !== currentUserName);
+      }
       
       const action = trip.pendingActions.find(a => a.title === 'Confirm presence');
       if (action && action.targetUsers) {
@@ -1340,7 +1353,7 @@ function confirmParticipation(isGoing) {
       trip.toastEvents.push({
         id: Date.now(),
         type: 'MEMBER_LEFT',
-        message: `O ${currentUserName} left the trip "${trip.name}".`,
+        message: `${currentUserName} left the trip "${trip.name}".`,
         targetUsers: trip.members.filter(m => m !== currentUserName), 
         notifiedUsers: []
       });
@@ -1492,6 +1505,9 @@ function removeMember(memberName) {
   
   if (confirm('Are you sure you want to leave this trip? You will lose access to it.')) {
     trip.members = trip.members.filter((m) => m.trim().toLowerCase() !== currentUserName.trim().toLowerCase());
+    if (trip.acceptedMembers) {
+        trip.acceptedMembers = trip.acceptedMembers.filter((m) => m.trim().toLowerCase() !== currentUserName.trim().toLowerCase());
+    }
     
     if (trip.pendingActions) {
       trip.pendingActions.forEach(action => {
@@ -1542,7 +1558,7 @@ function createTrip() {
   const endObj = new Date(endVal);
   
   if (endObj < startObj) {
-    alert('A data de fim não pode ser antes da data de início.');
+    alert('The end date cannot be before the start date.');
     return;
   }
 
@@ -1750,6 +1766,8 @@ function closeCurrentTrip() {
     return;
   }
 
+  const currentUserName = state.currentUser?.name || 'You';
+
   if (confirm(`Do you want to finish and close "${trip.name}"?`)) {
     trip.status = 'closed';
     trip.itinerary = [{ 
@@ -1758,10 +1776,29 @@ function closeCurrentTrip() {
       items: ['✅ Trip archived successfully.', 'Check your final balances in the Expenses tab.'] 
     }];
     trip.pendingActions = [];
+
+    // Adiciona o evento de notificação em inglês para os outros membros
+    if (!trip.toastEvents) trip.toastEvents = [];
+    trip.toastEvents.push({
+      id: Date.now(),
+      type: 'TRIP_CLOSED',
+      message: 'The trip has come to an end',
+      targetUsers: trip.members.filter(m => m !== currentUserName),
+      notifiedUsers: []
+    });
+
     saveTripsToStorage();
+    
+    // Altera o filtro ativo para a aba de histórico
     state.tripsFilter = 'closed'; 
+    
     render();
     setScreen('trips');
+    
+    // Sincroniza visualmente a classe 'active' nos botões de filtro do ecrã de viagens
+    document.querySelectorAll('[data-trip-filter]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tripFilter === 'closed');
+    });
   }
 }
 
@@ -1894,6 +1931,18 @@ safeListen('#trip-finish-btn', 'click', closeCurrentTrip);
 window.addEventListener('storage', (event) => {
   if (event.key === 'swipetravel.trips') {
     state.trips = readJSON('swipetravel.trips', []);
+    if (state.screen === 'trip-detail' && state.currentTripId) {
+      const tripAberta = state.trips.find(t => t.id === state.currentTripId);
+      
+      if (tripAberta && tripAberta.status === 'closed') {
+        state.tripsFilter = 'closed';
+        document.querySelectorAll('[data-trip-filter]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.tripFilter === 'closed');
+        });
+        setScreen('trips');
+      }
+    }
+    
     render(); 
   }
 });
